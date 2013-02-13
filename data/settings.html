@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+  </head>
+
+  <body>
+    <div id="content">
+      <div class="settings-group">
+        <span class="gold">Personal data</span>
+        <hr/>
+        <div id="remember-btn" class="goog-flat-button">Show hidden threads</div>
+        <div id="clear-watch-btn" class="goog-flat-button">Clear all watch items</div>
+      </div>
+      <div class="settings-group">
+        <span class="gold">Watch</span>
+        <hr/>
+        <input type="checkbox" id="watch-first">Pin watch items</input><br/>
+        <!--input type="checkbox" id="always-calc-delta">Autoload content of out-of-scope watch items</input-->
+      </div>
+      <!--div class="settings-group">
+        <span class="gold">Archive</span>
+        <hr/>
+        <input type="checkbox" id="archive-disable">
+          <span id="dis-arc-lbl">Do not add new items (disable archive<sup>?</sup>)</span>
+        </input><br/>
+      </div-->
+      <div class="settings-group">
+        <span id="wf-label" class="gold">Wordfilter<sup>?</sup>&nbsp;</span>
+        <input type="checkbox" id="wf-enable"/>
+        &nbsp;<span id="warning">Warning: an additional permanent wordfilter is set for iichan.hk</span>
+        <hr/>
+        <div id="wf-title">
+          Post title
+          <textarea id="wf-title-words"></textarea>
+        </div>
+        <div id="wf-post">
+          Post content
+          <textarea id="wf-post-words"></textarea>
+        </div>
+      </div>
+      <div class="settings-group">
+        <div id="fav-container">
+          <span id="fav-lbl" class="gold">Default parameters<sup>?</sup></span>
+          <hr/>
+          <textarea id="favorites"></textarea>
+        </div>
+        <div id="misc-container">
+          <span class="gold">Miscellaneous<sup>&nbsp;</sup></span>
+          <hr/>
+          <p>
+          Theme: 
+          <select id="theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+          </p>
+          <p>            
+            <input type="checkbox" id="force-textonly">Force text only</input><br/>
+          </p>
+        </div>
+        <div class="clear"/>
+      </div>
+      <div class="settings-group">
+        <hr/>
+        <div id="save-settings-btn" class="goog-flat-button">Save settings</div>
+      </div>
+  </body>
+</html>

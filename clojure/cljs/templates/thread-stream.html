@@ -1,0 +1,97 @@
+<div>
+  <table class="thread-stream" cellpadding="0" cellspacing="0" border="0">
+	<tr class="group-line">
+	  <td colspan="2" class="thread-group normal-weight"></td>
+	</tr>
+	<tr class="thread-line">
+	  <td class="thread-control" style="display: none;">
+		&nbsp;<a class="expand-trigger" title="Expand thread">&raquo;</a>
+		<div class="control-buttons">
+		  <p><a class="watch-trigger-disabled" onclick="frontend.watch_thread(this)" 
+				title="Watch thread">[~]</a></p>
+		  <div class="service-pane-container">
+			<p class="service-pane">
+			  <a class="forget-trigger" onclick="frontend.forget_thread(this)"
+				 title="Hide thread">&#x00d7;</a>
+			</p>
+		  </div>
+		</div>
+	  </td>
+	  <td class="thread-oppost" style="border-bottom: none;">
+		<div class="post-container">
+		  <div class="thread-header" title="Expand thread" style="display: none;">
+			<img class="flag"/>&nbsp;
+			No.&nbsp;<a class="thread-no reply-no" target="_blank"></a>
+			&nbsp;<a class="inline-view-trigger header-btn" title="Inline view" 
+					 onclick="frontend.inline_view_thread(this)">&#x274F;</a>
+			<a class="delta-link header-btn" target="_blank" onclick="return frontend.inline_view_reflink(this)" 
+			   title="Inline view delta">&#x2206;</a>
+			<!--a class="iv-trigger-menu header-btn" onclick="frontend.iv_show_menu(this)" 
+			   title="Integrated view">++</a-->
+            <div class="iv-border">
+			  <a class="iv-trigger header-btn" onclick="frontend.iv_load_posts(this, -1)" 
+			     title="Integrated view (all)">&#x2193;</a>
+    		  <a class="iv-trigger header-btn" onclick="frontend.iv_load_posts(this, 100)" 
+			     title="Integrated view (100)">10&#xb2;</a>
+			  <a class="iv-trigger header-btn" onclick="frontend.iv_load_posts(this, 50)" 
+			     title="Integrated view (50)">50</a>
+			  <a class="iv-trigger header-btn" onclick="frontend.iv_load_posts(this, 10)" 
+			     title="Integrated view (10)">10</a>
+			  <a class="iv-trigger iv-delta header-btn" onclick="frontend.iv_load_posts(this, -2)" 
+			     title="Integrated view (&#x2206;)">&#x2206;</a>
+            </div>
+            &nbsp;<a class="header-btn reply-btn" onclick="frontend.show_reply_form(this);" 
+			     title="Reply">[+]</a>
+			<span class="post-count" title="Post count"></span>
+			<span class="thread-title"></span>
+		  </div>
+          
+		  <div class="image-container">
+			<a class="image-link" target="_blank"><img class="post-image" src=""/></a>
+		  </div>
+		  <div class="oppost-text">
+            <div class="load-indicator loading-thread">
+              <img src="loading-bar.gif"/> Processing...
+            </div>
+          </div>
+		  <div class="clear"/>
+		</div>
+		<div class="replies">
+		  <div class="image-indent">
+			<div class="reply">
+			  <div class="post-container">
+				<div class="reply-header" style="display: none;">
+				  <img class="flag"/>&nbsp;
+				  No.&nbsp;<a class="reply-no" target="_blank"></a>
+				  &nbsp;<a class="inline-view-trigger header-btn" title="Inline view" 
+					   onclick="frontend.inline_view_thread(this)">&#x274F;</a>
+                  &nbsp;<a class="header-btn reply-btn" onclick="frontend.show_reply_form(this);" 
+ 			        title="Reply">[+]</a>
+                  <span class="reply-ord"></span>
+				  &nbsp;<span class="reply-title"></span>
+				</div>
+				<div class="image-container">
+				  <a class="image-link" target="_blank"><img class="post-image" src=""/></a>
+				</div>                
+				<div class="post-text">
+                  <div class="load-indicator">
+                    <img src="loading-bar.gif"/> Please wait...
+                  </div>
+                </div>
+				<div class="crossref-container">
+                  <span class="crossref-wrap">
+				    <a class="crossref" target="_blank" onclick="return frontend.inline_view_reflink(this)"></a>
+                  </span>
+				</div>
+				<div class="clear"/>
+			  </div>
+			</div>
+			<div class="collapse-bar"><a class="expand-trigger" title="Collapse thread">Collapse</a></div>
+		  </div>
+		</div>
+		<img class="lazy-load-trigger" onload="frontend.lazy_get_watch(this)"/>
+	  </td>
+	</tr>
+  </table>
+  <!-- img class="expand-all-trigger" onload="frontend.expand_btn_handler(event)"/-->
+</div>

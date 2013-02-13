@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base href=""/>
+    <meta id="standalone-image-stream"/>
+	<link rel="stylesheet" type="text/css" href="js/goog/css/common.css"/>
+	<link rel="stylesheet" type="text/css" href="css/main.css"/>
+	<link rel="stylesheet" type="text/css" href="css/browser.css"/>
+	<script type="text/javascript" src="js/utils/utils.js"></script>	
+  </head>
+  <body class="unconstrained">
+  	<div id="image-stream">
+	  <div class="stream-image-container" style="width: 99%">
+		<div class="image-thread-links" style="display: none;">
+		  <a class="thread-no" target="_blank"></a>
+		  <a class="inline-view-trigger" title="Inline view"
+			 onclick="frontend.show_thread_images(this)">&#x274F;</a>
+		</div>
+        <div class="load-indicator loading-images">
+          <img src="loading-bar.gif"/> Processing...
+        </div>
+		<a class="image-link" target="_blank"><img class="stream-image"/></a>
+	  </div>
+	</div>
+  </body>
+</html>

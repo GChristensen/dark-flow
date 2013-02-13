@@ -1,0 +1,56 @@
+
+#content
+{
+	margin: 0 10px;
+}
+
+.goog-flat-button
+{
+	display: inline-block;
+}
+
+hr
+{
+	border: 0;
+	height: 1px;
+	background-color: #800000;
+}
+
+.settings-group
+{
+	margin: 20px 0;
+}
+
+#wf-title, #fav-container
+{
+	float: left;
+	width: 300px;
+}
+
+#wf-post, #misc-container
+{
+	width: 300px;
+	margin-left: 310px;
+}
+
+#misc-container
+{
+	width: auto;
+}
+
+textarea
+{
+	width: 100%;
+	height: 150px;
+	background-color: #FFFFEE;
+	border: 1px solid #800000;
+	color: #800000;
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 14px;
+}
+
+#warning
+{
+    display: none;
+    color: red;
+}

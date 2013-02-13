@@ -1,0 +1,13 @@
+/*
+ * Copyright 2010 The Closure Library Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by the Apache License, Version 2.0.
+ * See the COPYING file for details.
+ */
+
+.goog-tooltip {
+  background: #FFFFEE;
+  border: 1px solid #800000;
+  padding: 6px;
+  z-index: 30000;
+}

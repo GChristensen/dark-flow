@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+ <head>
+   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+   <!-- for the clojurescript REPL -->
+   <!--meta http-equiv="Access-Control-Allow-Origin" content="*"/-->
+ </head>
+ <body>
+   <div id="content" class="tab-content">
+     <div id="tabs">
+       <div id="thread-tabs"></div>
+       <div class="goog-tab-bar-clear"></div>
+       <div id="thread-tabs_content" class="tab-thread-tabs_content goog-tab-content">
+         <div id="tab-page">
+           <div id="thread-list">
+             <div id="thread-list-buttons">
+             <div id="thread-list-caption"></div>
+             <div class="right text-buttons">
+               &#160;&#160;<a class="header-btn iv-trigger" title="Settings" id="settings-btn">&#xa7;</a>
+               <a class="header-btn iv-trigger" title="Watch" id="watch-btn">&#xa4;</a>
+               <a class="header-btn iv-trigger" title="Help" id="help-btn">?</a>  
+             </div>
+             <div id="expand-btn" title="Expand all threads" class="right goog-flat-button">Expand</div>
+             <div id="refresh-btn" class="right goog-flat-button">Refresh</div>
+             <div id="go-again-btn" class="right goog-flat-button">Reload</div>
+             <div class="clear"/>
+             </div>
+             <div id="thread-headlines">
+             </div>
+           </div>      
+         </div>  
+       </div>
+       <div id="nav-btn" onclick="frontend.show_nav_popup(event)"><img src="nav.png"/></div>
+     </div>
+   </div>    
+ </body>
+</html>

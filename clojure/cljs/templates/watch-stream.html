@@ -1,0 +1,40 @@
+<table id="thread-stream" cellpadding="0" cellspacing="0" border="0">
+  <tr class="thread-line">
+	<td class="watch-thread-control" style="display: none;">
+	  <div class="control-buttons">
+		<div class="service-pane-container" style="margin-top: 15px;">
+		  <p class="service-pane">
+			<span class="delta-posts-lazy" onclick="frontend.lazy_get_watch(this)"
+				  title="Delta posts from the last visit">&#x2206; [?]</span>
+		  </p>
+		</div>
+	  </div>
+	</td>
+	<td class="watch-image-cell" style="border-bottom: none;">
+	  <div class="watch-image-container">
+		<a class="image-link" target="_blank"><img class="watch-image" src=""/></a>
+	  </div>
+	</td>
+	<td class="thread-oppost watch-thread-oppost" style="border-bottom: none;">
+	  <div class="thread-header watch-thread-header" style="display: none;">
+		No.&nbsp;<a class="thread-no" target="_blank"></a>
+		&nbsp;<a class="inline-view-trigger" title="Inline view" 
+				 onclick="frontend.inline_view_thread(this)">&#x274F;</a>
+		<a class="delta-link" target="_blank" onclick="return frontend.inline_view_reflink(this)" 
+		   title="Inline view delta">&#x2206;</a>
+		&nbsp;<span class="watch-control-buttons">
+		  <a class="watch-trigger-enabled" onclick="frontend.watch_thread(this)" onwatch="onwatch"
+			 title="Unwatch thread">[&#x2012;]</a>
+		</span>
+		&nbsp;<span class="post-count" title="Post count"></span>
+		<span class="thread-title"></span>
+	  </div>
+	  <div class="oppost-text watch-oppost-text">
+        <div class="load-indicator">
+          <img src="loading-bar.gif"/> Processing...
+        </div>
+      </div>
+	  <img class="lazy-load-trigger" onload="frontend.lazy_get_watch(this, true)"/>
+	</td>
+  </tr>
+</table>

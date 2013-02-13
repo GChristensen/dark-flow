@@ -1,0 +1,75 @@
+/*
+ * Copyright 2009 The Closure Library Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by the Apache License, Version 2.0.
+ * See the COPYING file for details.
+ */
+
+/*
+ * Standard styling for goog.ui.Dialog.
+ *
+ * @author ssaviano@google.com (Steven Saviano)
+ * @author attila@google.com (Attila Bodis)
+ */
+
+
+.modal-dialog {
+  background: #181818;
+  border: 1px solid #757575;
+  color: #DDC771;
+  position: absolute;
+  width: 90%;
+  height: 90%;
+}
+
+.modal-dialog a,
+.modal-dialog a:link,
+.modal-dialog a:visited  {
+  color: #DDC771;
+  cursor: pointer;
+}
+
+.modal-dialog-bg {
+  background: #181818;
+  left: 0;
+  position: absolute;
+  top: 0;
+}
+
+.modal-dialog-title {
+  background: #282828;
+  color: #DDC771;
+  cursor: pointer;
+  height: 20px;
+  /* Add padding on the right to ensure the close button has room. */
+  padding: 8px 8px 8px 8px;
+  border-bottom: 1px solid #757575;
+  position: relative;
+  _zoom: 1; /* Ensures proper width in IE6 RTL. */
+}
+
+.modal-dialog-title-close, .modal-dialog-title-close:hover {
+  vertical-align: middle;
+  float: right;
+  position: relative;
+  top: -4px;
+}
+
+.modal-dialog-title-close:hover {
+  border-color: #303030;
+  color: #606060;
+  background-color: #c0c0c0;
+}
+
+
+.modal-dialog-content {
+	position: absolute;
+	width: 100%;
+	top: 37px;
+	bottom: 0;
+	overflow: hidden;
+}
+
+.goog-buttonset-default {
+  font-weight: bold;
+}
