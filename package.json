@@ -1,15 +1,15 @@
 {
-    "name": "dark-flow",
+    "name": "dark-flow-aggregator",
     "author": "thenewkinetic",
     "icon": "data/icon.png", 
     "icon64": "data/icon64.png", 
     "license": "BSD", 
-    "version": "0.1.0 (alpha)", 
+    "version": "0.1.0", 
     "dependencies": [
        "api-utils"
        ,"addon-kit"
     ],
-    "fullName": "Dark Flow", 
-    "id": "dark-flow", 
+    "fullName": "Dark Flow Aggregator", 
+    "id": "dark-flow-ag", 
     "description": "An advanced imageboard aggregator"
    }
