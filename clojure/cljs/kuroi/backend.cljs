@@ -17,7 +17,7 @@
 
 ;; Since the original application was client-server, this one
 ;; is also separated to the frontend and backend. Backend tries
-;; to use as less javascript-specific code as possible, while
+;; to use as little javascript-specific code as possible, while
 ;; frontend tires to utilize no direct io code.
 
 (defn file-base [file]
