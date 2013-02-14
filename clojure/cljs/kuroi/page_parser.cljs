@@ -179,11 +179,20 @@
     (re-find #"\d+" (.-name elt))))
 
 (defmethod get-thread-id :default [root-node target]
-  (let [elt (select root-node "input[type='checkbox']")]
-    (.-value elt)))
-
+  (when root-node 
+    (if (= (str/lower-case (.-tagName root-node)) "input")
+      (.-value root-node)
+      (when-let [elt (select root-node "input[type='checkbox']")]
+        (.-value elt)))))
 
 (defmulti get-summary-node trade-dispatch)
+
+(defmethod get-summary-node "dobrochan.ru" [thread target]
+  (if-let [omitted (select thread "div.abbrev > span:last-of-type")]
+    (if (re-find #"\d+" (.-textContent omitted))
+      omitted
+      0)
+    0))
 
 (defmethod get-summary-node :default [thread target]
   (select thread 
@@ -345,6 +354,7 @@
            data (for [thread threads]
                   (when-let [oppost-node (get-oppost thread target)]
                     (let [data (cons-post-data :omitted (get-omitted-posts thread target)
+                                               :page-index (:page-index (meta target))
                                                :oppost true)
                           oppost (parse-post oppost-node data target)]
                       (when (filt/filter-shallow pattern oppost target)
@@ -481,10 +491,7 @@
 ;;       (make-image-headline nil (first (select filesz [:img])) (first (select filesz [:a])) filesz target))))
   
 (defmethod parse-thread-images :default [doc-tree target]
-  (let [images (select* doc-tree ".filesize, .fileinfo, .fileInfo, img[src*='thumb/']" ;,
-;                                  *:not(.filesize):not(.fileinfo):not(.fileText)
-;                                  > a[target][href*='src/']"
-                        )]
+  (let [images (select* doc-tree ".filesize, .fileinfo, .fileInfo, img[src*='thumb/']")]
         (for [[filesz thumb] (partition 2 images)]
           (build-image-data nil thumb (.-parentNode thumb) filesz target))))
 
@@ -493,37 +500,33 @@
     (apply concat
            (for [root-node threads]
              (let [thread-id (get-thread-id root-node target)
-                   images (select* root-node ".filesize, .fileinfo, .fileInfo, img[src*='thumb/']" ;,
-;                                            *:not(.filesize):not(.fileinfo):not(.fileText)
-;                                            > a[target][href*='src/']"
-                                   )]
+                   images (select* root-node ".filesize, .fileinfo, .fileInfo, img[src*='thumb/']")]
                (for [[filesz thumb] (partition 2 images)]
                  (let [link (.-parentNode thumb)]
                    (build-image-data thread-id thumb link filesz target))))))))
 
-;; (defn parse-images-flat [doc-tree target]
-;;   (let [nodes (select doc-tree #{#{[:form :> [:input (attr= :type "checkbox")]]
-;;                                    [:form :> :label :> [:input (attr= :type "checkbox")]]}
-;;                                  [:.filesize]
-;;                                  [[:* (but :.filesize)] :> [:a (attr? :target) (attr-contains :href "src/")]]})
-;;         groups (partition-by #(= (:tag %) :input) nodes)
-;;         images (loop [prev (first groups) sep (second groups) rest (nnext groups) out []]
-;;                  (if rest
-;;                    (let [following (first rest)
-;;                          [h t] (split-at (- (count following) 2) following)]
-;;                        (recur t (fnext rest) (nnext rest) (concat out sep prev h)))
-;;                    (concat out sep prev)))
-;;         images (partition-by #(= (:tag %) :input) images)]      
-;;     (loop [th (first images) th-images (second images) rest (nnext images) out []]
-;;       (if th-images
-;;         (let [id-elt (first th)
-;;               thread-id (get-thread-id id-elt target)]
-;;           (recur (first rest) (second rest) (nnext rest)
-;;                  (concat out (for [[filesz link] (partition 2 th-images)]
-;;                                (make-image-headline thread-id (first (select link [:img])) link filesz
-;;                                                     target)))))
-;;        out))))
-
+(defn parse-images-flat [doc-tree target]
+  (let [nodes (select* doc-tree "form > input[type='checkbox'],
+                                form > label > input[type='checkbox'],
+                                .filesize,
+                                *:not(.filesize) > a[target][href*='src/']")
+        groups (partition-by #(= (str/lower-case (.-nodeName %)) "input") nodes)
+        images (loop [prev (first groups) sep (second groups) rest (nnext groups) out []]
+                 (if rest
+                   (let [following (first rest)
+                         [h t] (split-at (- (count following) 2) following)]
+                       (recur t (fnext rest) (nnext rest) (concat out sep prev h)))
+                   (concat out sep prev)))
+        images (partition-by  #(= (str/lower-case (.-nodeName %)) "input") images)]      
+    (loop [th (first images) th-images (second images) rest (nnext images) out []]
+      (if th-images
+        (let [id-elt (first th)
+              thread-id (get-thread-id id-elt target)]
+          (recur (first rest) (second rest) (nnext rest)
+                 (concat out (for [[filesz link] (partition 2 th-images)]
+                               (build-image-data thread-id (select link "img") link filesz
+                                                    target)))))
+       out))))
 
 (defmulti parse-images trade-dispatch)
 
@@ -533,10 +536,12 @@
 (defmethod parse-images :default [doc-tree target]
   (if (:inline target)
     (parse-thread-images doc-tree target)
-    (parse-images-struct doc-tree ".board > .thread,
+    (if (select doc-tree "form > blockquote")
+      (parse-images-flat doc-tree target)
+      (parse-images-struct doc-tree ".board > .thread,
                                   form#delform > div[id^='thread'],
                                   body > form > div[id^='thread']"
-                        target)))
+                           target))))
 
 ;; extraction of additional data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -695,11 +700,11 @@
 
 (defmethod get-captcha "iichan.hk" [url target callback]
   (let [link (let [[_ board thread] (re-find #".*/([^/]*)/[^/]*/(\d+)\..*$" url)
-                   script (if (= board "b") "captcha1.pl" "captcha.pl")]
+                   script (if (#{"a" "b"} board) "captcha1.pl" "captcha.pl")]
                (if thread
                  (str "http://iichan.hk/cgi-bin/" script "/" board "/?key=res" thread)
                  (let [[_ board] (re-find #"\.hk/([^/]*)" url)
-                       script (if (= board "b") "captcha1.pl" "captcha.pl")]
+                       script (if (#{"a" "b"} board) "captcha1.pl" "captcha.pl")]
                    (str "http://iichan.hk/cgi-bin/" script "/" board "/?key=mainpage"))))]
     (callback {:link (str link "#i" (.random js/Math))})))
 
@@ -815,18 +820,19 @@
       (doseq [img (select* form-node "img")]
         (set! (.-src img) (fix-url (.-src img) target)))
 
-      (let [form (adjust-form form-node target)
-            captcha-elt (select form (.-__captcha_elt__ form))]
-        (.setAttribute captcha-elt (.-__captcha_attr__ form-node) "")
+      (let [form (adjust-form form-node target)]
+        (when-let [captcha-elt (select form (.-__captcha_elt__ form))]
+          (.setAttribute captcha-elt (.-__captcha_attr__ form-node) ""))
         form))))
 
 ;;;;;;;;;;;;;
 
-(defn parse-page [response target &{:keys [get-metadata]}]
-  (let [error-msg (str "<span class=\"red\">Error loading page: " (:url response))]
-    (if (= (:error response) "http_error")
-      [(build-error-data (str error-msg " (" (:status response) ")") target)]
-      (let [text (transform-page-text (:text response) target)
+(defn parse-page [page target &{:keys [get-metadata]}]
+  (let [error-msg (str "<span class=\"red\">Error loading page: " (:url page))]
+    (if (= (:error page) "http_error")
+      [(build-error-data (str error-msg " (" (:status page) ")") target)]
+      (let [target (with-meta target {:page-index (:index page)})
+            text (transform-page-text (:text page) target)
             dom (.parseFromString (new js/DOMParser) text "text/html")
             threads (if (:img target)
                       (parse-images dom target)

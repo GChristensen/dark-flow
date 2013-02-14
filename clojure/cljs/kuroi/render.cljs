@@ -167,6 +167,19 @@
   (mk/do-when (and (seq (:children thread)) (not (:hdlns thread)))
    (inject-replies thread target :word-filter word-filter)))
 
+(defn get-label [thread]
+  (letfn [(print-index [thread]
+            (if (number? (:page-index thread))
+              (str "page: " (:page-index thread))
+              (:page-index thread)))]
+    (cond 
+     (and (:date thread) (:page-index thread))
+     (str (:date thread) "; " (print-index thread))
+     (:date thread)
+     (:date thread)
+     (:page-index thread)
+     (print-index thread))))
+             
 (em/deftemplate thread-stream :compiled "templates/thread-stream.html" 
   [threads target]
   [:.expand-all-trigger]
@@ -255,7 +268,7 @@
                 [:.thread-no]
                 (em/do->
                  (em/set-attr :href (:link th))
-                 (em/set-attr :title (:date th))
+                 (em/set-attr :title (get-label th))
                  (em/content (:id th)))
                 [:.delta-link]
                 (mk/do-when (:onwatch th)

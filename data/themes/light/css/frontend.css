@@ -207,6 +207,12 @@ img#loading
 {
 }
 
+#expand-btn
+{
+    width: 48px;
+    text-align: center;
+}
+
 table.thread-stream, table#thread-stream
 {
 	width: 100%;
@@ -621,7 +627,7 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
 
 .popup, .nav-popup
 {
-	visibility: hidden;
+    visibility: hidden;
 	background-color: #FFFFEE;
 	border: 1px solid #800000;
 	position: absolute;

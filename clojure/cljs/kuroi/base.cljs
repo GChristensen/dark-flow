@@ -30,14 +30,10 @@
  
 (defn load-styles [theme &{:keys [settings]}]
     (load-css theme "main.css")
-    (load-css theme "frontend.css")
-    (load-css theme "common.css")
-    (load-css theme "dialog.css")
-    (load-css theme "tooltip.css")
-    (load-css theme "flatbutton.css")
-    (when settings
-      (load-css theme "settings.css")))
-
+    (load-css theme "closure.css")
+    (if settings
+      (load-css theme "settings.css")
+      (load-css theme "frontend.css")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def *iichan-hk-wf*

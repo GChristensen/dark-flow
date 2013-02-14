@@ -138,7 +138,8 @@
                 out-of-scope (map (fn [kv] (let [w (second kv)]
                                              (assoc w
                                                :onwatch true
-                                               :last-id (:last-id w))))
+                                               :last-id (:last-id w)
+                                               :page-index "out of scope")))
                                   (filter (fn [[k v]] (not (contains? watch k))) 
                                           threads-on-watch))
                 threads-on-watch (sort-by-id (concat (map (fn [kv] (second kv))

@@ -101,7 +101,7 @@ img#loading
 
 #tabs
 {
-	position: relative;
+    position: relative;
 	padding: 0 8px;
 	height: 100%;
 }
@@ -199,6 +199,12 @@ img#loading
 
 #mass-check
 {
+}
+
+#expand-btn
+{
+    width: 48px;
+    text-align: center;
 }
 
 table.thread-stream, table#thread-stream
@@ -575,8 +581,8 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
 
 .popup, .nav-popup
 {
-	visibility: hidden;
-	background-color: #282828;
+    visibility: hidden;
+    background-color: #282828;
 	border: 1px solid #757575;
 	position: absolute;
 	max-width: 70%;
@@ -589,7 +595,6 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
     max-width: 80%;
     border-left: none;
     border-bottom: none;
-
 }
 
 .crossref-container

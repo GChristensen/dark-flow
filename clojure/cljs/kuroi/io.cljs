@@ -53,19 +53,19 @@
             (callback (assoc result :pages (map clj-map (seq (:pages result))))))))
       (callback nil))))
 
+;; (defn get-page [url callback]
+;;   (get-pages (array url) 
+;;     (fn [response]
+;;       (callback (dissoc (assoc response :page
+;;                                (first (:pages response)))
+;;                         :pages)))))
+
 (defn get-page [url callback]
   (get-pages (array url) 
     (fn [response]
-      (callback (dissoc (assoc response :page
-                               (first (:pages response)))
-                        :pages)))))
-
-(defn get-page-no-cache [url callback]
-  (get-pages url ; !!
-    (fn [response]
-      (callback (dissoc (assoc response :page 
-                               (first (:pages response)))
-                        :pages)))))
+      (let [page (dissoc (first (:pages response)) :index)
+            response (assoc response :page page)]
+        (callback (dissoc response :pages))))))
                        
 (defn post-form [url form referer callback]
   (request "post-form" (js-obj "url" url "form" form "referer" referer)

@@ -41,6 +41,12 @@
         domain (get addr 3)
         board (get addr 4)
         trade (if addr (re-find #"[^.]+\.[^.]+$" domain) url)
+        trade (condp = trade
+                    "2ch.so" "2ch.hk"
+                    "0chan.ru" "0chan.hk"
+                    "iichan.ru" "iichan.hk"
+                    "410chan.ru" "410chan.org"
+                    trade)
         forum (str trade "/" board)
         defaults (:default-params-map settings)
         url (if-let [forum-defaults (and defaults (defaults forum))]
@@ -53,18 +59,11 @@
         hdlns (s-in? url ":hdlns")]
         (when (and domain board)
           {:url url
-           :scheme "http://"
-           :forum forum
-           :domain (condp = domain
-                     "wakachan.org" "www.wakachan.org"
-                     domain)
-           :trade (condp = trade
-                    "2ch.so" "2ch.hk"
-                    "0chan.ru" "0chan.hk"
-                    "iichan.ru" "iichan.hk"
-                    "410chan.ru" "410chan.org"
-                    trade)
+           :trade trade
            :board board
+           :forum forum
+           :domain domain
+           :scheme "http://"
            :hdlns hdlns ; take only opposts
            :fourchan (= trade "4chan.org")
            :kraut (= trade "krautchan.net")
@@ -121,11 +120,11 @@
         (let [pages (:pages response)
               threads (pp/parse-page (first pages) target :get-metadata true)
               thread-meta (meta threads)
-              return #(callback (render/threads %1 target) %2 thread-meta)
               threads (concat threads
                               (reduce concat (map #(pp/parse-page % target) 
                                                   (rest pages))))
-              threads (if (:rev target) (reverse threads) threads)]
+              threads (if (:rev target) (reverse threads) threads)
+              return #(callback (render/threads %1 target) %2 thread-meta)]
           (if (and (:filter target) (not (seq threads)))
             ;; if the :search url option is specified and nothing was found
             (callback nil nil (merge thread-meta {:error "" 
@@ -225,7 +224,8 @@
         (if oppost
           (let [oppost (assoc oppost 
                          :board (:forum target)
-                         :fourchan (:fourchan target))]
+                         :fourchan (:fourchan target)
+                         :page-index nil)]
             (io/put-data 'watch (:internal-id oppost) {:board (:prefix target) 
                                                        :oppost (pr-str oppost)})
             (callback true))
@@ -297,8 +297,10 @@
                      (pp/paginate 0 target))]
     (if password
       (io/put-data 'settings "password" {:content password}))
-    (io/post-form url form thread-url callback)))
-
+    (cb-let [response] (io/post-form url form thread-url)
+      (if-let [error (pp/get-post-error response target)]
+        (callback {:error error})
+        (callback nil)))))
 
 (def *captcha-cache* (atom {}))
 (defn get-captcha [request callback]

@@ -8,7 +8,7 @@
   :cljsbuild {
     :builds [{:source-paths ["cljs"]
               :compiler 
-              {:output-to "d:/std/home/firefox/current/extensions/dark-flow@jetpack/resources/dark-flow/data/frontend.js"
+              {:output-to "d:/std/home/firefox/current/extensions/dark-flow-ag@jetpack/resources/dark-flow-aggregator/data/frontend.js"
                :optimizations :whitespace
                :externs ["externs.js"]
                :pretty-print true

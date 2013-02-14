@@ -6,7 +6,6 @@
   (:require
    [kuroi.base :as base]
    [kuroi.backend :as bk]
-   [kuroi.page-parser :as pp]
    [kuroi.settings :as settings]
 
    [clojure.string :as str]
@@ -36,6 +35,8 @@
 
 (def *target*)
 (def *nav-popup*)
+
+(def *expand-counter* (atom 0))
 
 (def ^:const forget-trigger "<a class=\"forget-trigger\" href=\"\" onclick=\"frontend.forget_thread(this)\"  
 			                 title=\"Forget thread\">&#x00d7;</a>")
@@ -294,15 +295,19 @@
 (defn ^:export inline-view-reflink [a]
   (inline-view-link (.-href a)))
 
-(defn ^:export show-thread-images [a]
+(defn ^:export show-thread-images [a from-thread-stream?]
   (let [thread-no (child-by-class (.-parentNode a) "thread-no")
         thread-link (.-href thread-no)
-        target (assoc *target* :inline true)
+        target (if from-thread-stream?
+                 (let [thread-line (parent-by-class a "thread-line")]
+                       (get-target thread-line))
+                 *target*)
+        target (assoc target :img true :inline true)
         iframe-link (str base/*protocol* ":images?target=" (js/encodeURI (pr-str target))
-                         "&thread-id=" (.-innerHTML thread-no))
+                         "&thread-id=" (.-textContent thread-no))
         title (str "<a class=\"title-link\" target=\"_blank\" href=\"" thread-link "\">" 
                    thread-link "</a>")]    
-    (inline-dialog [title] iframe-link #_:html-title #_true)))
+    (inline-dialog [title] iframe-link)))
 
 ;; popups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -443,9 +448,10 @@
       ;; if the dom isn't constructed yet
       (js/setTimeout #(lazy-get-watch element watch-stream?) 2000))))
 
-(defn ^:export expand-thread [post-id expand?]
+(defn ^:export expand-thread [post-id expand? &{:keys [mass]}]
   (let [post (dom/getElement post-id)
         thread-headlines (dom/getElement "thread-headlines")
+        expand-btn (when (not mass) (dom/getElement "expand-btn"))
         expand-trigger (child-by-class (.-parentNode post) "expand-trigger")
         post-text (child-by-class post "oppost-text")
         replies (child-by-class post "replies")]
@@ -455,18 +461,25 @@
             (set! (.-display (.-style replies)) "none")
             (set! (.-innerHTML expand-trigger) "&raquo;")
             (set! (.-expanded_ expand-trigger) false)
-            (let [vp-offset (- (.-y (style/getClientPosition post))
-                               (.-y (style/getClientPosition thread-headlines)))]
-              (when (< vp-offset 0)
-                (. post (scrollIntoView)))))
+            (when (not mass)
+              (swap! *expand-counter* dec)
+              (when (= 0 @*expand-counter*)
+                (set! (.-textContent expand-btn) "Expand")))
+              (let [vp-offset (- (.-y (style/getClientPosition post))
+                                 (.-y (style/getClientPosition thread-headlines)))]
+                (when (< vp-offset 0)
+                  (. post (scrollIntoView)))))
           (or (true? expand?) (and (= expand? js/undefined) (not (.-expanded_ expand-trigger))))
           (let [service-pane (child-by-class (.-parentNode post) "service-pane")]
-                (when (> (.indexOf (.-innerHTML service-pane) "[?]") 0)
-                 (lazy-get-watch post false))
-                (set! (.-maxHeight (.-style post-text)) "none")
-                (set! (.-display (.-style replies)) "block")
-                (set! (.-innerHTML expand-trigger) "&laquo;")
-                (set! (.-expanded_ expand-trigger) true))))
+            (when (not mass)
+              (swap! *expand-counter* inc)
+            (set! (.-textContent expand-btn) "Collapse"))
+            (when (> (.indexOf (.-innerHTML service-pane) "[?]") 0)
+              (lazy-get-watch post false))
+            (set! (.-maxHeight (.-style post-text)) "none")
+            (set! (.-display (.-style replies)) "block")
+            (set! (.-innerHTML expand-trigger) "&laquo;")
+            (set! (.-expanded_ expand-trigger) true))))
   false)
 
 (defn ^:export watch-thread [element]
@@ -584,6 +597,8 @@
         (cb-let [threads stats meta] (bk/load-threads {:target target :key :pages})
           (when-let [form (:form meta)]
             (.appendChild (.-body js/document) (:form meta)))
+          (when-let [navbar (:navbar meta)]
+            (.appendChild (dom/getElement "nav-popup") navbar))
           (when threads
             (set! (.-innerHTML (child-by-class threads "thread-group"))
                   (format-stats stats target))
@@ -629,17 +644,23 @@
 
 (defn ^:export expand-btn-handler [e]
   (let [expand-btn (dom/getElement "expand-btn")
+        nav-popup (dom/getElement "nav-popup")
         tab-page (dom/getElement "tab-page")
+        threads (dom/getElementsByClass "thread-oppost" tab-page)
         expand? (if (= (.-textContent expand-btn) "Expand") true false)]
+    (hide-elt nav-popup) ; popup uses the 'visibility' css rule, but we need to set 'display'
     (if (= (.-textContent expand-btn) "Expand")
       (do
+        (reset! *expand-counter* (.-length threads))
         (set! (.-textContent expand-btn) "Collapse")
         (set! (.-title expand-btn) "Collapse all threads"))
       (do
+        (reset! *expand-counter* 0)
         (set! (.-textContent expand-btn) "Expand")
         (set! (.-title expand-btn) "Expand all threads")))
-    (array/forEach (dom/getElementsByClass "thread-oppost" tab-page)
-                   #(expand-thread (.-id %) expand?))))
+    (array/forEach threads
+                   #(expand-thread (.-id %) expand? :mass true))
+    (show-elt nav-popup "block")))
 
 (defn setup-snapin-buttons []
   (let [s-btn (dom/getElement "settings-btn")]
@@ -744,10 +765,10 @@
                                     (hide-elt (child-by-class popup-elt "service-loading"))
                                     (bk/forget-captcha {:target target :thread-id thread-id})
                                     (let [error-node (child-by-class popup-elt "post-error")]
-                                      (if-let [error (pp/get-post-error response target)]
+                                      (if (:error response)
                                         (do
                                           (show-elt error-node "block")
-                                          (set! (.-innerHTML error-node) error))
+                                          (set! (.-innerHTML error-node) (:error response)))
                                         (do
                                           (show-reply-form element new-thread?)
                                           (if new-thread?
@@ -865,11 +886,11 @@
 ;;;;;;;;;;;;;;;;;;;
 
 (defn setup-nav-popup []
-  (let[nav-img (.querySelector js/document "#nav-btn > img")
-       popup-elt
-       (create-elt "div"
-                   {"class" "nav-popup",
-                    "id" "nav-popup"})]
+  (let [nav-img (.querySelector js/document "#nav-btn > img")
+        popup-elt
+        (create-elt "div"
+                    {"class" "nav-popup",
+                     "id" "nav-popup"})]
     (set! (.-src nav-img) (themed-image (.-src nav-img)))
     (.appendChild (.-body js/document) popup-elt)
     (set! *nav-popup* (goog.ui.Popup. popup-elt))
@@ -882,6 +903,7 @@
   #_(.setPosition *nav-popup* (goog.positioning.ClientPosition.
                              (+ (.-clientX e) )
                              (+ (.-clientY e) )))
+  (show-elt (dom/getElement "nav-popup") "block")
   (.setVisible *nav-popup* true))
 
 ;; external entry points ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

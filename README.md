@@ -1,4 +1,4 @@
-dark-flow
+Dark Flow Addon
 =========
 
 An advanced imageboard aggregator.

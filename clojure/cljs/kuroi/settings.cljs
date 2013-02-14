@@ -116,7 +116,8 @@
     (base/load-styles (:theme settings) :settings true)
 
     (let [wf-lbl (goog.ui.Tooltip. "wf-label")]
-      (.setHtml wf-lbl "A regexp should be prefixed with the '#' character,
+      (.setHtml wf-lbl "Place each wordfilter entry on a single line.<br/>
+                     A regexp should be prefixed with the '#' character,
                      for example: <span class=\"gold\">#\\bpony\\b</span>."))
 
     (let [fav-lbl (goog.ui.Tooltip. "fav-lbl")]
