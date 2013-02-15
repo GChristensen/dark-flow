@@ -53,13 +53,6 @@
             (callback (assoc result :pages (map clj-map (seq (:pages result))))))))
       (callback nil))))
 
-;; (defn get-page [url callback]
-;;   (get-pages (array url) 
-;;     (fn [response]
-;;       (callback (dissoc (assoc response :page
-;;                                (first (:pages response)))
-;;                         :pages)))))
-
 (defn get-page [url callback]
   (get-pages (array url) 
     (fn [response]

@@ -19,9 +19,10 @@
 ;; is also separated to the frontend and backend. Backend tries
 ;; to use as little javascript-specific code as possible, while
 ;; frontend tires to utilize no direct io code.
-
-(defn file-base [file]
-  (str io/*file-base* file))
+;; This adds a potential ability to proxy/stub the frontend and
+;; backend to leave heavy processing on the server, although
+;; this separation may also be performed at the level of the 
+;; io.cljs module
 
 (def ^:const *forget-queue-size* 100)
 
@@ -331,3 +332,18 @@
         (callback password))
       (callback password))))
   
+
+(defn get-frontend-html [_ callback]
+  (callback (render/frontend)))
+
+(defn get-settings-html [_ callback]
+  (callback (render/settings)))
+
+(defn get-inline-watch-stream-html [_ callback]
+  (callback (render/inline-watch-stream)))
+
+(defn get-inline-image-stream-html [_ callback]
+  (callback (render/inline-image-stream)))
+
+(defn get-manual-html [_ callback]
+  (callback (render/manual)))

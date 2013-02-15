@@ -10,31 +10,6 @@
 
 (def *posting-not-impl* #{"ichan.org" "7chan.org" "5channel.net" "0chan.hk"})
 
-(defn load-external [filename filetype]
-  (letfn [(append [elt]
-            (.appendChild (aget (.getElementsByTagName js/document "head") 0) elt))]
-    (condp = filetype
-      "css" (let [elt (.createElement js/document "link")]
-              (set! (.-rel elt) "stylesheet")
-              (set! (.-type elt) "text/css")
-              (set! (.-href elt) filename)
-              (append elt))
-      "ico" (let [elt (.createElement js/document "link")]
-              (set! (.-rel elt) "icon")
-              (set! (.-href elt) filename)
-              (append elt))
-      nil)))
-
-(defn load-css [theme filename]
-  (load-external (str io/*file-base* "themes/" theme "/css/" filename) "css"))
- 
-(defn load-styles [theme &{:keys [settings]}]
-    (load-css theme "main.css")
-    (load-css theme "closure.css")
-    (if settings
-      (load-css theme "settings.css")
-      (load-css theme "frontend.css")))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def *iichan-hk-wf*
   {:wf-enabled true ; sneaky wordfilter for iichan.hk

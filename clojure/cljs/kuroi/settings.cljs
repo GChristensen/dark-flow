@@ -20,7 +20,7 @@
     [goog.ui.Button :as button]
     [goog.ui.FlatButtonRenderer :as flat-button-rndr]
     )
-   (:use-macros [kuroi.macros :only [cb-let]]))
+   (:use-macros [kuroi.macros :only [cb-let with-page]]))
 
 (def *default-settings*
   {:theme "dark"
@@ -88,7 +88,7 @@
       (re-pattern (str "(?i)" (.substring w 1)))
       w)))
 
-(defn load-settings [callback]
+(defn ^:export load-settings [callback]
   (cb-let [settings-str] (io/get-data 'settings 'content "settings")
     (if settings-str
       (let [settings (reader/read-string settings-str)]
@@ -110,54 +110,3 @@
             (sets/union (:wf-post-parsed @*settings*)
                         (prepare-wordfilter (:wf-post-parsed base/*iichan-hk-wf*)))})
     @*settings*))
-
-(defn ^:export main []
-  (cb-let [settings] (load-settings)
-    (base/load-styles (:theme settings) :settings true)
-
-    (let [wf-lbl (goog.ui.Tooltip. "wf-label")]
-      (.setHtml wf-lbl "Place each wordfilter entry on a single line.<br/>
-                     A regexp should be prefixed with the '#' character,
-                     for example: <span class=\"gold\">#\\bpony\\b</span>."))
-
-    (let [fav-lbl (goog.ui.Tooltip. "fav-lbl")]
-      (.setHtml fav-lbl "Default parameters for a board on a single line,
-                     for example: <span class=\"gold\">4chan.org/c:10p:3r:img</span>.<br/>
-                     When loading the board it's possible to disable a switch specified here
-                     by adding <br/>a exclamation mark in front of it, for example: 
-                     <span class=\"gold\">4chan.org/c:5p:!img<span class=\"gold\">."))
-
-    (let [uri (goog.Uri. (.-href (.-location js/document)))
-          warning (dom/getElement "warning")]
-      (when (= "iichan.hk" (.getParameterValue uri "target"))
-        (set! (.-display (.-style warning)) "inline")))
-    
-    (let [remember-btn (goog.ui/decorate (dom/getElement "remember-btn"))]
-      (events/listen remember-btn
-                     goog.ui.Component.EventType/ACTION
-                     (fn [e] (remember-threads))))
-    
-    (let [clear-watch-btn (goog.ui/decorate (dom/getElement "clear-watch-btn"))]
-      (events/listen clear-watch-btn
-                     goog.ui.Component.EventType/ACTION
-                     (fn [e] (clear-watch))))
-
-    (let [save-btn (goog.ui/decorate (dom/getElement "save-settings-btn"))]
-      (events/listen save-btn
-                     goog.ui.Component.EventType/ACTION
-                     (fn [e] (save-settings))))
-
-    (set! (.-checked (dom/getElement "watch-first")) (:pin-watch-items settings))
-    (set! (.-value (dom/getElement "wf-title-words")) (if (:wf-title settings)
-                                                        (:wf-title settings)
-                                                        ""))
-    (set! (.-value (dom/getElement "wf-post-words")) (if (:wf-post settings)
-                                                       (:wf-post settings)
-                                                       ""))
-    (set! (.-checked (dom/getElement "wf-enable")) (:wf-enabled settings))
-    (set! (.-value (dom/getElement "theme")) (:theme settings))
-    (set! (.-value (dom/getElement "favorites")) (if (:default-params settings)
-                                                   (:default-params settings)))
-    (set! (.-checked (dom/getElement "force-textonly")) (:force-text settings))))
-
-

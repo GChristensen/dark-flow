@@ -219,7 +219,7 @@
                       (em/set-attr :class "watch-trigger-enabled")
                       (em/set-attr :title "Unwatch thread")
                       (em/set-attr :onwatch "onwatch")
-                      (em/html-content "[&#x2012;]"))
+                      (em/html-content "&#x2605;"))
                      node)
                     node))
                 [:.lazy-load-trigger]
@@ -343,3 +343,13 @@
   (if (:img target)
     (image-stream data target)
     (thread-stream data target)))
+
+(em/deftemplate frontend :compiled "templates/frontend.html" [])
+
+(em/deftemplate settings :compiled "templates/settings.html" [])
+
+(em/deftemplate inline-watch-stream :compiled "templates/watch.html" [])
+
+(em/deftemplate inline-image-stream :compiled "templates/images.html" [])
+
+(em/deftemplate manual :compiled "templates/manual.html" [])

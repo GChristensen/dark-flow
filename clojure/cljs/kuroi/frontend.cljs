@@ -6,7 +6,7 @@
   (:require
    [kuroi.base :as base]
    [kuroi.backend :as bk]
-   [kuroi.settings :as settings]
+   [kuroi.settings :as opts]
 
    [clojure.string :as str]
    [clojure.browser.repl :as repl]
@@ -31,7 +31,7 @@
    [goog.ui.FlatButtonRenderer :as flat-button-rndr]
    [goog.positioning :as pos]
    )
-  (:use-macros [kuroi.macros :only [cb-let s-in? log]]))
+  (:use-macros [kuroi.macros :only [cb-let with-page s-in? log]]))
 
 (def *target*)
 (def *nav-popup*)
@@ -45,12 +45,16 @@
 (def ^:const the-list-is-empty "<div class=\"load-indicator\">The list is empty</div>")
 
 (def *theme*)
+(def *file-base*)
 (def loading-post)
 (def service-loading)
 (def obtaining-data)
 
+(defn file-base [file]
+  (str *file-base* file))
+
 (defn themed-image [file-name]
-  (bk/file-base (str "themes/" *theme* "/images/" file-name)))
+  (file-base (str "themes/" *theme* "/images/" file-name)))
 
 (defn setup-themed-vars [theme]
   (set! *theme* theme)
@@ -114,6 +118,31 @@
 (defn show-output [content]
   (let [output (dom/getElement "output")]
     (set! (.-innerHTML output) content)))
+
+(defn load-external [filename filetype]
+  (letfn [(append [elt]
+            (.appendChild (aget (.getElementsByTagName js/document "head") 0) elt))]
+    (condp = filetype
+      "css" (let [elt (.createElement js/document "link")]
+              (set! (.-rel elt) "stylesheet")
+              (set! (.-type elt) "text/css")
+              (set! (.-href elt) filename)
+              (append elt))
+      "ico" (let [elt (.createElement js/document "link")]
+              (set! (.-rel elt) "icon")
+              (set! (.-href elt) filename)
+              (append elt))
+      nil)))
+
+(defn load-css [theme filename]
+  (load-external (str *file-base* "themes/" theme "/css/" filename) "css"))
+ 
+(defn load-styles [theme &{:keys [settings]}]
+    (load-css theme "main.css")
+    (load-css theme "closure.css")
+    (if settings
+      (load-css theme "settings.css")
+      (load-css theme "frontend.css")))
 
 (defn format-stats [stats target]  
   (let [shown (if (:img target) (:shown stats) (+ (:shown stats) (:watch stats)))
@@ -454,7 +483,9 @@
         expand-btn (when (not mass) (dom/getElement "expand-btn"))
         expand-trigger (child-by-class (.-parentNode post) "expand-trigger")
         post-text (child-by-class post "oppost-text")
-        replies (child-by-class post "replies")]
+        replies (child-by-class post "replies")
+        nav-popup (dom/getElement "nav-popup")]
+    (hide-elt nav-popup)
     (cond (or (false? expand?) (and (= expand? js/undefined) (.-expanded_ expand-trigger)))
           (do
             (set! (.-maxHeight (.-style post-text)) "65px")
@@ -479,7 +510,8 @@
             (set! (.-maxHeight (.-style post-text)) "none")
             (set! (.-display (.-style replies)) "block")
             (set! (.-innerHTML expand-trigger) "&laquo;")
-            (set! (.-expanded_ expand-trigger) true))))
+            (set! (.-expanded_ expand-trigger) true)))
+    (show-elt nav-popup "block"))
   false)
 
 (defn ^:export watch-thread [element]
@@ -494,7 +526,7 @@
       (cb-let [response] (bk/unwatch-thread (.-id thread-oppost))
         (if response
           (do
-            (set! (.-innerHTML element) "[~]")
+            (set! (.-innerHTML element) "&#x2606;")
             (set! (.-className element) "watch-trigger-disabled")
             (set! (.-title element) "Watch thread")
             (if (not *target*)
@@ -506,7 +538,7 @@
       (cb-let [response] (bk/watch-thread {:thread-id thread-id :target target})
         (if response
           (do                         ;"&#x2329;<span class=\"italic\">&#x03c5;</span>&#x232a;"
-            (set! (.-innerHTML element) "[&#x2012;]")
+            (set! (.-innerHTML element) "&#x2605;")
             (set! (.-className element) "watch-trigger-enabled")
             (set! (.-title element) "Unwatch thread")
             (set! (.-innerHTML service-pane) (delta-posts 0))
@@ -591,7 +623,7 @@
     (set! *target* target)
     (if  *target*
       (do 
-        (base/load-external (str "http://" (:trade *target*) "/favicon.ico") "ico")
+        (load-external (str "http://" (:trade *target*) "/favicon.ico") "ico")
         (set! (.-innerHTML (dom/getElement "thread-list-caption") )
               (str "<b>" (:trade target) "</b> board chain"))
         (cb-let [threads stats meta] (bk/load-threads {:target target :key :pages})
@@ -619,7 +651,7 @@
           (set! *target* (bk/make-target (js/decodeURI url)))
           (if  *target*
             (do 
-              (base/load-external (str "http://" (:trade *target*) "/favicon.ico") "ico")
+              (load-external (str "http://" (:trade *target*) "/favicon.ico") "ico")
               (set! (.-innerHTML (dom/getElement "thread-list-caption"))
                     (str "Loading " (pages *target*)
                          (if (not= (pages *target*) 1)
@@ -900,30 +932,71 @@
     (.setPinnedCorner *nav-popup* goog.positioning.Corner/BOTTOM_LEFT)))
 
 (defn ^:export show_nav_popup [e]
-  #_(.setPosition *nav-popup* (goog.positioning.ClientPosition.
-                             (+ (.-clientX e) )
-                             (+ (.-clientY e) )))
-  (show-elt (dom/getElement "nav-popup") "block")
+  (dom/getElement "nav-popup")
   (.setVisible *nav-popup* true))
 
 ;; external entry points ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn ^:export inline-watch-stream []
-  (cb-let [settings] (settings/load-settings)
-    (setup-themed-vars (:theme settings))
-    (base/load-styles (:theme settings))
+(defn ^:export init [file-base]
+  (set! *file-base* file-base))
 
+(defn ^:export settings [settings]
+  (with-page settings [settings]
+    (let [wf-lbl (goog.ui.Tooltip. "wf-label")]
+      (.setHtml wf-lbl "Place each wordfilter entry on a single line.<br/>
+                     A regexp should be prefixed with the '#' character,
+                     for example: <span class=\"gold\">#\\bpony\\b</span>."))
+
+    (let [fav-lbl (goog.ui.Tooltip. "fav-lbl")]
+      (.setHtml fav-lbl "Default parameters for a board on a single line,
+                     for example: <span class=\"gold\">4chan.org/c:10p:3r:img</span>.<br/>
+                     When loading the board it's possible to disable a switch specified here
+                     by adding <br/>a exclamation mark in front of it, for example: 
+                     <span class=\"gold\">4chan.org/c:5p:!img<span class=\"gold\">."))
+
+    (let [uri (goog.Uri. (.-href (.-location js/document)))
+          warning (dom/getElement "warning")]
+      (when (= "iichan.hk" (.getParameterValue uri "target"))
+        (set! (.-display (.-style warning)) "inline")))
+    
+    (let [remember-btn (goog.ui/decorate (dom/getElement "remember-btn"))]
+      (events/listen remember-btn
+                     goog.ui.Component.EventType/ACTION
+                     (fn [e] (opts/remember-threads))))
+    
+    (let [clear-watch-btn (goog.ui/decorate (dom/getElement "clear-watch-btn"))]
+      (events/listen clear-watch-btn
+                     goog.ui.Component.EventType/ACTION
+                     (fn [e] (opts/clear-watch))))
+
+    (let [save-btn (goog.ui/decorate (dom/getElement "save-settings-btn"))]
+      (events/listen save-btn
+                     goog.ui.Component.EventType/ACTION
+                     (fn [e] (opts/save-settings))))
+
+    (set! (.-checked (dom/getElement "watch-first")) (:pin-watch-items settings))
+    (set! (.-value (dom/getElement "wf-title-words")) (if (:wf-title settings)
+                                                        (:wf-title settings)
+                                                        ""))
+    (set! (.-value (dom/getElement "wf-post-words")) (if (:wf-post settings)
+                                                       (:wf-post settings)
+                                                       ""))
+    (set! (.-checked (dom/getElement "wf-enable")) (:wf-enabled settings))
+    (set! (.-value (dom/getElement "theme")) (:theme settings))
+    (set! (.-value (dom/getElement "favorites")) (if (:default-params settings)
+                                                   (:default-params settings)))
+    (set! (.-checked (dom/getElement "force-textonly")) (:force-text settings))))
+
+(defn ^:export inline-watch-stream [settings]
+  (with-page inline-watch-stream [settings]
     (cb-let [threads] (bk/load-watch-items nil)
       (if threads
         (insert-threads threads)
         (let [t-h (dom/getElement "thread-headlines")]
           (set! (.-innerHTML t-h) the-list-is-empty))))))
 
-(defn ^:export inline-image-stream []
-  (cb-let [settings] (settings/load-settings)
-    (setup-themed-vars (:theme settings))
-    (base/load-styles (:theme settings))
-
+(defn ^:export inline-image-stream [settings]
+  (with-page inline-image-stream [settings]
     (let [thread-headlines (dom/getElement "thread-headlines")]
       (set! (.-innerHTML thread-headlines) obtaining-data))
 
@@ -934,21 +1007,16 @@
       (cb-let [images] (bk/get-thread-images {:target target :thread-id thread-id})
               (insert-threads images)))))
 
-(defn ^:export display-help []
-  (cb-let [settings] (settings/load-settings)
-    (setup-themed-vars (:theme settings))
-    
-     (let [manual (.querySelector js/document "#manual")]
-       (set! (.-src manual) (bk/file-base (.-src manual))))))
+(defn ^:export display-help [settings]
+  (with-page manual [settings]   
+    (let [manual (.querySelector js/document "#manual")]
+      (set! (.-src manual) (file-base (.-src manual))))))
 
-(defn ^:export main []
+(defn ^:export main [settings]
 ;;;;;
 ;;  (repl/connect "http://localhost:9000/repl")
 ;;;;;
-  (cb-let [settings] (settings/load-settings)
-    (setup-themed-vars (:theme settings))
-    (base/load-styles (:theme settings))
-
+  (with-page frontend [settings]
     (setup-snapin-buttons)
     (setup-nav-popup)
     (load-threads)))

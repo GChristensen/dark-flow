@@ -16,12 +16,12 @@
              ]}
   :profiles
   {
-   :production
+   :firefox
    {
     :cljsbuild {
      :builds [{:source-paths ["cljs"]
                :compiler 
-               {:output-to "../data/frontend.js"
+               {:output-to "../firefox/data/frontend.js"
                 :optimizations :advanced
                 :externs ["externs.js"]
                 :pretty-print false

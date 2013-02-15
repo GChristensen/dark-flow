@@ -2,6 +2,7 @@
 <html>
  <head>
    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+   <script type="text/javascript" id="frontend-script" src="frontend.js" onload="init_page()"/>
    <!-- for the clojurescript REPL -->
    <!--meta http-equiv="Access-Control-Allow-Origin" content="*"/-->
  </head>
@@ -14,7 +15,7 @@
              <div id="thread-list-buttons">
                <div id="thread-list-caption"></div>
                <div class="right text-buttons">
-                 &#160;&#160;<a class="header-btn iv-trigger" title="Settings" id="settings-btn">&#xa7;</a>
+                 &nbsp;&nbsp;<a class="header-btn iv-trigger" title="Settings" id="settings-btn">&#xa7;</a>
                  <a class="header-btn iv-trigger" title="Watch" id="watch-btn">&#xa4;</a>
                  <a class="header-btn iv-trigger" title="Help" id="help-btn">?</a>  
                </div>
@@ -26,8 +27,8 @@
              <div id="thread-headlines"></div>
            </div>                
          </div>  
+         <div id="nav-btn" onclick="frontend.show_nav_popup(event)"><img src="nav.png"/></div>
        </div>
-       <div id="nav-btn" onclick="frontend.show_nav_popup(event)"><img src="nav.png"/></div>
      </div>
    </div>    
  </body>

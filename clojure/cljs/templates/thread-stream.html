@@ -8,7 +8,7 @@
 		&nbsp;<a class="expand-trigger" title="Expand thread">&raquo;</a>
 		<div class="control-buttons">
 		  <p><a class="watch-trigger-disabled" onclick="frontend.watch_thread(this)" 
-				title="Watch thread">[~]</a></p>
+				title="Watch thread">&#x2606;</a></p>
 		  <div class="service-pane-container">
 			<p class="service-pane">
 			  <a class="forget-trigger" onclick="frontend.forget_thread(this)"
@@ -24,10 +24,10 @@
 			No.&nbsp;<a class="thread-no reply-no" target="_blank"></a>
 			&nbsp;<a class="inline-view-trigger header-btn" title="Inline view" 
         			 onclick="frontend.inline_view_thread(this)">&#x274F;</a>
-            <a class="inline-view-trigger header-btn" title="Thread images"
-			   onclick="frontend.show_thread_images(this, true)">&#x2730;</a>
 			<a class="delta-link header-btn" target="_blank" onclick="return frontend.inline_view_reflink(this)" 
 			   title="Inline view delta">&#x2206;</a>
+            <a class="inline-view-trigger header-btn inline-images-btn" title="Thread images"
+			   onclick="frontend.show_thread_images(this, true)">i</a>
 			<!--a class="iv-trigger-menu header-btn" onclick="frontend.iv_show_menu(this)" 
 			   title="Integrated view">++</a-->
             <div class="iv-border">

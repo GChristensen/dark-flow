@@ -7,10 +7,7 @@ self.port.on("do-init", function(opts)
 
     opts.port = self.port;
 
-    // replace content of the page by the supplied html
-    doc.documentElement.innerHTML = opts.html;
-
-    uw.on_frontend_load = function ()
+    uw.init_page = function ()
     {
         if (uw.goog.require)
         {
@@ -21,18 +18,23 @@ self.port.on("do-init", function(opts)
 
         uw.frontend = uw.kuroi.frontend;
 
-        // initialization of the io.cljs module
+        // initialization of the cljs modules
         uw.kuroi.io.init(opts);
-        // entry point for the page is inserted by the addon
-        uw.$entry_point;
+        uw.kuroi.frontend.init(opts.file_base);
+
+        // an entry point for the page is inserted by the addon        
+        uw.kuroi.settings.load_settings(function(settings)
+          {
+              uw.kuroi.frontend.$entry_point(settings);
+          });
     };
 
-    // inject frontend.js to the document
+    // inject frontend.js into the document
     script = doc.createElement("script");
 
     script.type = "text/javascript";
     script.src = opts.file_base + "frontend.js";
-    script.setAttribute("onload", "on_frontend_load()");
+    script.setAttribute("onload", "init_page()");
 
     doc.head.appendChild(script);
 });

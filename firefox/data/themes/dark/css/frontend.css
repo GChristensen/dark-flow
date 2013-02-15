@@ -94,6 +94,12 @@ img#loading
 	box-sizing: border-box;
 }
 
+.manual-content
+{
+    overflow: auto;
+    height: auto;
+}
+
 .tab-content
 {
 	padding-top: 8px !important;
@@ -297,14 +303,31 @@ table.thread-stream, table#thread-stream
 
 .watch-trigger-disabled
 {
+    font-size: 120%;
 	color: #DDC771;
 	cursor: pointer;
 }
 
 .watch-trigger-enabled
 {
+    font-size: 120%;
 	color: #DDC771;
 	cursor: pointer;
+}
+
+.watch-control-buttons > .watch-trigger-disabled
+{
+    font-size: 100%;
+}
+
+.watch-control-buttons > .watch-trigger-enabled
+{
+    font-size: 100%;
+}
+
+.inline-images-btn
+{
+    font-family: "Lucida Console", Courier, monospace;
 }
 
 .service-pane-container

@@ -4,6 +4,13 @@
 (defmacro cb-let [[& args] call & body]
   (concat call [`(fn [~@args] ~@body)]))
 
+(defmacro with-page [page [& args] & body]
+  `(cb-let [html#] (~(symbol (str "bk/get-" page "-html")) ~@args)
+     (~'setup-themed-vars (:theme ~'settings))
+     (.appendChild (.-body js/document) (.querySelector html# "#content"))
+     (~'load-styles (:theme ~'settings) ~@(if (= page 'settings) [:settings true] []))
+     ~@body))
+
 (defmacro log [o]
   `(.log js/console ~o))
 
