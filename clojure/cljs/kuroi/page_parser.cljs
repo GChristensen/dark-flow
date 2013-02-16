@@ -43,14 +43,25 @@
     (str/replace content #"<([^ ]+)[^>]*onload[^>]*>"
                  (fn [_ & match] (str "<" (first match) ">")))))
 
+(def *host* (.-host (.-location js/document)))
+(def *host-pattern* (re-pattern (str "https?://" *host* ".*")))
+
 (defn fix-url [url target]
   (when url
-    (cond
-      (= (get url 0) \/) (if (= (get url 1) \/)
-                           (str "http:" url)
-                           (str (:scheme target) (:domain target) url))
-      (re-matches #"^http.*" url) url
-      :default (str (:target target) "/" url))))
+    (let [url (if io/*addon*
+                url
+                (if (re-matches *host-pattern* url)
+                  (.substring url (+ (.indexOf url *host*) (.-length *host*)))
+                  url))
+          url (cond
+               (= (get url 0) \/) (if (= (get url 1) \/)
+                                    (str "http:" url)
+                                    (str (:scheme target) (:domain target) url))
+               (re-matches #"^http.*" url) url
+               :default (str (:target target) "/" url))]
+      (if (:prox target)
+        (str "/get/" url)
+        url))))
 
 (def ^:dynamic *crossref-map* nil)
 
@@ -213,7 +224,7 @@
     (when-let [abbrev (select post-text "*[class*='abbr'] a")]
       (let [xpnd-url (if (:oppost data)
                        (thread-url post-id target)
-                       (fix-url (.-href abbrev) target))]
+                       (fix-url (.getAttribute abbrev "href") target))]
         (.setAttribute abbrev "onclick" 
                        (str "return frontend.iv_expand_post(this, '" xpnd-url "')")))))
   (let [width-height (when image-size (re-find #"(\d+)[x\u00d7](\d+)" (.-innerHTML image-size)))
@@ -224,19 +235,19 @@
             :date (when date-val (str/trim date-val))
             :title (when title-elt (sanitize (.-textContent title-elt)))
             :link (thread-url (or (:parent-id data) post-id) target)
-            :thumb (when thumb-img (fix-url (a- src thumb-img) target))
-            :image (when image-link (fix-url (a- href image-link) target))
+            :thumb (when thumb-img (fix-url (.getAttribute thumb-img "src") target))
+            :image (when image-link (fix-url (.getAttribute image-link "href") target))
             :image-size (if image-size [(get width-height 1) (get width-height 2)] [0 0])
             :text (check-reflinks post-id post-text target)
             })))
 
 (defn build-image-data [thread-id thumb-img image-link image-size target]
   (let [width-height (when image-size (re-find #"(\d+)[x\u00d7](\d+)" (.-innerHTML image-size)))
-        image-link (when image-link (fix-url (.-href image-link) target))]
+        image-link (when image-link (fix-url (.getAttribute image-link "href") target))]
     {:id thread-id
      :internal-id image-link
      :link (thread-url thread-id target)
-     :thumb (when thumb-img (fix-url (.-src thumb-img) target))
+     :thumb (when thumb-img (fix-url (.getAttribute thumb-img "src") target))
      :image image-link
      :image-size (if image-size [(get width-height 1) (get width-height 2)] [0 0])
      }))
@@ -589,21 +600,21 @@
 (defmethod extract-navbar "4chan.org" [dom target]
   (let [navbar-elt (select dom "#boardNavDesktop")]
     (transform-navbar dom (seq (.-childNodes navbar-elt))
-                      #(re-matches #".*\.org/..*" (.-href %))
+                      #(re-matches #".*\.org/..*" (.getAttribute % "href"))
                       #(do
-                         (a-> href % (str/replace (.-href %) "//boards." base/*scheme*))
+                         (a-> href % (str/replace (.getAttribute % "href") "//boards." io/*scheme*))
                          %))))
 
 (defmethod extract-navbar "iichan.hk" [dom target]
   (let [navbar-elt (select dom ".adminbar")]
     (transform-navbar dom (seq (.-childNodes navbar-elt))
-                      #(re-matches #"(.*\.org/..*)|(.*/\.\./..*)" (.-href %))
-                      #(let [l (.-href %)]
+                      #(re-matches #"(.*\.org/..*)|(.*/\.\./..*)" (.getAttribute % "href"))
+                      #(let [l (.getAttribute % "href")]
                          (set! (.-href %) 
                                (if (s-in? l "..")
-                                 (str base/*scheme* (:domain target)
+                                 (str io/*scheme* (:domain target)
                                       "/" (second (re-find #"\.\./(.*)/" l)))
-                                 (str/replace l "http://" base/*scheme*)))
+                                 (str/replace l "http://" io/*scheme*)))
                          %))))
 
 (defn extract-navbar-menu [dom menu-sel target]
@@ -615,10 +626,10 @@
                          (select* ne "a")
                          [(.createTextNode dom "]")])))]
     (transform-navbar dom nodes
-                      #(re-matches #"/[^/]+/" (.-href %))
-                      #(let [l (.-href %)]
+                      #(re-matches #"/[^/]+/" (.getAttribute % "href"))
+                      #(let [l (.getAttribute % "href")]
                          (set! (.-textContent %) l)
-                         (set! (.-href %) (str base/*scheme* (:domain target) 
+                         (set! (.-href %) (str io/*scheme* (:domain target) 
                                                (.substring l 0 (.lastIndexOf l "/"))))
                          %))))
 
@@ -636,9 +647,9 @@
 (defmethod extract-navbar "dobrochan.ru" [dom target]
   (when-let [navbar-elt (select dom ".adminbar")]
     (transform-navbar dom (seq (.-childNodes navbar-elt))
-                      #(re-matches #"/[a-zA-Z0-9-]+/index.xhtml" (.-href %))
-                      #(let [l (.-href %)]
-                         (set! (.-href %) (str base/*scheme* (:domain target) 
+                      #(re-matches #"/[a-zA-Z0-9-]+/index.xhtml" (.getAttribute % "href"))
+                      #(let [l (.getAttribute % "href")]
+                         (set! (.-href %) (str io/*scheme* (:domain target) 
                                                (.substring l 0 (.lastIndexOf l "/"))))
                          %))))
 
@@ -648,8 +659,8 @@
     (when navbar-elt
       (transform-navbar dom (seq (.-childNodes navbar-elt))
                         #(re-matches #"/?[a-zA-Z0-9-]+/?(index\.x?html)?" (.-href %))
-                        #(let [l (.-href %)]
-                           (set! (.-href %) (str base/*scheme* (:domain target) 
+                        #(let [l (.getAttribute % "href")]
+                           (set! (.-href %) (str io/*scheme* (:domain target) 
                                                  (if (= (first l) "/")
                                                    (if (s-in? l "index")
                                                      (.substring l 0 (.lastIndexOf l "/"))
@@ -837,7 +848,7 @@
             threads (if (:img target)
                       (parse-images dom target)
                       (parse-threads dom target))
-            meta {:form (when get-metadata (extract-form dom target))
+            meta {:form (when (and io/*addon* get-metadata) (extract-form dom target))
                   :navbar (when get-metadata (extract-navbar dom target))}]
         (if (seq threads)
           (with-meta threads meta)

@@ -201,7 +201,7 @@
                 [:.iv-border]
                 (mk/remove-when (:error th))
                 [:.reply-btn]
-                (mk/remove-when (or (:error th) (base/*posting-not-impl* (:trade target))))
+                (mk/remove-when (or (:error th) (not io/*addon*) (base/*posting-not-impl* (:trade target))))
                 [:.expand-trigger]
                 (em/set-attr :onclick (str "frontend.expand_thread(\""
                                            (:internal-id th)
@@ -353,3 +353,5 @@
 (em/deftemplate inline-image-stream :compiled "templates/images.html" [])
 
 (em/deftemplate manual :compiled "templates/manual.html" [])
+
+(em/deftemplate urlbar :compiled "templates/urlbar.html" [])

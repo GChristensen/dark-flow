@@ -82,6 +82,7 @@
            :deep (s-in? url ":deep") ; deep search
            :chain (s-in? url ":chain") ; chained query
            :first (s-in? url ":first") ; first query in chain
+           :prox (s-in? url ":prox")
            :bypass (s-in? url ":bypass")
            })))  
 
@@ -347,3 +348,6 @@
 
 (defn get-manual-html [_ callback]
   (callback (render/manual)))
+
+(defn get-urlbar-html [_ callback]
+  (callback (render/urlbar)))

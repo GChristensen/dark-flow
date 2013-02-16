@@ -5,7 +5,11 @@ port.emit = function () {};
 
 var opts = {};
 opts.file_base = {};
-opts.port = {}
+opts.resource = {};
+opts.port = {};
+opts.protocol = {};
+opts.scheme = {};
+opts.addon = {}
 
 var payload = {};
 payload.id = {};

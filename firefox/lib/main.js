@@ -86,6 +86,7 @@ function create_request()
 
 // mini SSI-like features //////////////////////////////////////////////////////
 
+//var pages = {};
 var bootstrap_script = null;
 
 function bootstrap_js(entry_point)
@@ -106,19 +107,21 @@ function bootstrap_js(entry_point)
 
 function process_messages(worker) 
 {
-    var opts = {file_base: data.url("")
+    var opts = {file_base: data.url(""),
+                protocol: protocol,
+                scheme: protocol + "://"
                };
 
     worker.port.emit("do-init", opts);
 
     worker.port.on("get-pages", function(data)
     {
-        comm.get_pages(create_request, worker.port, data);
+        comm.get_pages(create_request, worker.port, "", data);
     });
 
     worker.port.on("post-form", function(data)
     {
-        comm.post_form(create_request, worker.port, data);
+        comm.post_form(create_request, worker.port, "", data);
     });
 
     worker.port.on("put-data", function(data)
@@ -162,34 +165,17 @@ function process_messages(worker)
 
 // page bootstrapping //////////////////////////////////////////////////////////
 
-pageMod.PageMod({
-  include: protocol + "://*",
-  contentScript: bootstrap_js("main"),
-  onAttach: process_messages
-});
+function cons_page_mod(entry_point)
+{
+    return pageMod.PageMod({
+        include: protocol + ":" + (entry_point? (entry_point + "*"): "//*"),
+        contentScript: bootstrap_js(entry_point? entry_point: "main"),
+        onAttach: process_messages
+    });
+}
 
-pageMod.PageMod({
-  include: protocol + ":settings*",
-  contentScript: bootstrap_js("settings"),
-  onAttach: process_messages
-});
-
-pageMod.PageMod({
-  include: protocol + ":watch*",
-  contentScript: bootstrap_js("inline_watch_stream"),
-  onAttach: process_messages
-});
-
-pageMod.PageMod({
-  include: protocol + ":images*",
-  contentScript: bootstrap_js("inline_image_stream"),
-  onAttach: process_messages
-});
-
-pageMod.PageMod({
-  include: protocol + ":help*",
-  contentScript: bootstrap_js("display_help"),
-  onAttach: process_messages
-});
-
-
+cons_page_mod();
+cons_page_mod("help");
+cons_page_mod("watch");
+cons_page_mod("images");
+cons_page_mod("settings");

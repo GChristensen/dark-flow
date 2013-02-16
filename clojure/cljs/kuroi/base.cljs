@@ -4,10 +4,7 @@
 
 (ns kuroi.base
   (:require [kuroi.io :as io]))
-
-(def *protocol* "chan")
-(def *scheme* (str *protocol* "://"))
-
+   
 (def *posting-not-impl* #{"ichan.org" "7chan.org" "5channel.net" "0chan.hk"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -8,10 +8,14 @@
 ;; ideomatically abstracted communications with the addon ;;;;;;;;;;;;;;;;;;;;;;
 
 (def *port*)
+(def *addon*)
+(def *scheme*)
 (def *file-base* nil)
 
 (defn ^:export init [opts]
   (set! *port* (.-port opts))
+  (set! *addon* (.-addon opts))
+  (set! *scheme* (.-scheme opts))
   (set! *file-base* (.-file-base opts)))
 
 (defn gen-uuid []

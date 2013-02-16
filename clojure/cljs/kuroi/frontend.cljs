@@ -23,6 +23,7 @@
    [goog.style :as style]
    [goog.array :as array]
    [goog.dom.forms :as forms]
+   [goog.net.cookies :as cookies]
    [goog.ui.Dialog :as dialog]
    [goog.Timer :as timer]
    [goog.ui.Tooltip :as tooltip]
@@ -34,17 +35,21 @@
   (:use-macros [kuroi.macros :only [cb-let with-page s-in? log]]))
 
 (def *target*)
+(def *resource*)
+
 (def *nav-popup*)
 
 (def *expand-counter* (atom 0))
 
-(def ^:const forget-trigger "<a class=\"forget-trigger\" href=\"\" onclick=\"frontend.forget_thread(this)\"  
+(def ^:const forget-trigger "<a class=\"forget-trigger\" onclick=\"frontend.forget_thread(this)\"  
 			                 title=\"Forget thread\">&#x00d7;</a>")
 (def ^:const empty-set "<div class=\"prohibit\">&#x20e0;</div>")
 (def ^:const error-loading-page "<div class=\"prohibit load-indicator\">Error loading page</div>")
 (def ^:const the-list-is-empty "<div class=\"load-indicator\">The list is empty</div>")
 
 (def *theme*)
+(def *addon*)
+(def *protocol*)
 (def *file-base*)
 (def loading-post)
 (def service-loading)
@@ -140,6 +145,9 @@
 (defn load-styles [theme &{:keys [settings]}]
     (load-css theme "main.css")
     (load-css theme "closure.css")
+    (let [ua (str/lower-case (.-userAgent js/navigator))]
+      (if (or (s-in? ua "android") (s-in? ua "mobile"))
+        (load-css theme "mobile.css")))
     (if settings
       (load-css theme "settings.css")
       (load-css theme "frontend.css")))
@@ -152,7 +160,7 @@
         hidden (if (:img target) 0 (+ filtered forgotten))]
     (if (string? stats)
       stats
-      (str (when (not (or (:img target) (base/*posting-not-impl* (:trade target))))
+      (str (when (not (or (:img target) (not *addon*) (base/*posting-not-impl* (:trade target))))
              "<a class=\"new-thread\" title=\"New thread\" style=\"cursor: pointer !important;\"
                       onclick=\"frontend.show_reply_form(this, true)\">+</a>&nbsp;")
            "<a target=\"_blank\" class=\"board-link\" href=\"" (:target target) "\">"
@@ -172,7 +180,7 @@
       (do
         (let [indicators (.querySelectorAll threads ".load-indicator > img")]
           (doseq [i (seq indicators)]
-            (set! (.-src i) (themed-image (.-src i)))))
+            (set! (.-src i) (themed-image (.getAttribute i "src")))))
         (.removeChild t-h (.-firstChild t-h))
         (.appendChild t-h threads))
       (set! (.-innerHTML t-h) err-msg))
@@ -332,7 +340,7 @@
                        (get-target thread-line))
                  *target*)
         target (assoc target :img true :inline true)
-        iframe-link (str base/*protocol* ":images?target=" (js/encodeURI (pr-str target))
+        iframe-link (str *protocol* ":images?target=" (js/encodeURI (pr-str target))
                          "&thread-id=" (.-textContent thread-no))
         title (str "<a class=\"title-link\" target=\"_blank\" href=\"" thread-link "\">" 
                    thread-link "</a>")]    
@@ -570,7 +578,7 @@
         (let [oppost (child-by-class thread-line "thread-oppost")
               existing-replies (child-by-class oppost "replies")]
           (when-let [indicator (.querySelector posts ".load-indicator > img")]
-            (set! (.-src indicator) (themed-image (.-src indicator))))
+            (set! (.-src indicator) (themed-image (.getAttribute indicator "src"))))
           (.removeChild oppost existing-replies)
           (.appendChild oppost (.-firstChild posts))
           (set! (.-innerHTML service-pane) service-html)
@@ -642,7 +650,7 @@
 (defn refresh-handler [pages]
   (fn [e]
     (let [thread-headlines (dom/getElement "thread-headlines")
-          url (.-href (.-location js/document))]
+          url *resource*]
       (set! (.-innerHTML thread-headlines) obtaining-data)
       (if (and (> (.indexOf url "]") 0)
                (> (.indexOf url "[") 0))
@@ -698,18 +706,18 @@
   (let [s-btn (dom/getElement "settings-btn")]
     (events/listen s-btn
                    goog.events.EventType/CLICK
-                   #(inline-dialog "Settings" (str base/*protocol* ":settings?target=" 
+                   #(inline-dialog "Settings" (str *protocol* ":settings?target=" 
                                                    (:trade *target*)))))
 
   (let [w-btn (dom/getElement "watch-btn")]
     (events/listen w-btn
                    goog.events.EventType/CLICK
-                   #(inline-dialog "Watch" (str base/*protocol* ":watch"))))
+                   #(inline-dialog "Watch" (str *protocol* ":watch"))))
 
   (let [h-btn (dom/getElement "help-btn")]
     (events/listen h-btn
                    goog.events.EventType/CLICK
-                   #(inline-dialog "Help" (str base/*protocol* ":help"))))
+                   #(inline-dialog "Help" (str *protocol* ":help"))))
 
   (when (:chain *target*)
     (set! (.-display (.-style (dom/getElement "go-again-btn"))) "none")
@@ -863,6 +871,14 @@
           (set-captcha captcha-elt false)
           (set! (.-onmousedown captcha-elt) #(set-captcha (.-target %) true)))
 
+        (when-let [sage-box (child-by-id form-clone "sagecheckbox")]
+          (let [e-mail (child-by-id form-clone "e-mail")]
+          (.setAttribute (.-parentNode sage-box) "onclick" "")
+          (set! (.-onclick sage-box) (fn [e]
+                                       (if (.-checked (.-target e))
+                                         (set! (.-value e-mail) "sage")
+                                         (set! (.-value e-mail) ""))))))
+
         (cb-let [password] (bk/get-password)
           (when-let [password-elt (.querySelector form-clone "input[type='password']")]
             (set! (.-value password-elt) password)))
@@ -923,7 +939,7 @@
         (create-elt "div"
                     {"class" "nav-popup",
                      "id" "nav-popup"})]
-    (set! (.-src nav-img) (themed-image (.-src nav-img)))
+    (set! (.-src nav-img) (themed-image (.getAttribute nav-img "src")))
     (.appendChild (.-body js/document) popup-elt)
     (set! *nav-popup* (goog.ui.Popup. popup-elt))
     (.setPosition *nav-popup* (new goog.positioning.AnchoredViewportPosition
@@ -937,8 +953,10 @@
 
 ;; external entry points ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn ^:export init [file-base]
-  (set! *file-base* file-base))
+(defn ^:export init [opts]
+  (set! *file-base* (.-file-base opts))
+  (set! *protocol* (.-protocol opts))
+  (set! *addon* (.-addon opts)))
 
 (defn ^:export settings [settings]
   (with-page settings [settings]
@@ -987,7 +1005,7 @@
                                                    (:default-params settings)))
     (set! (.-checked (dom/getElement "force-textonly")) (:force-text settings))))
 
-(defn ^:export inline-watch-stream [settings]
+(defn ^:export watch [settings]
   (with-page inline-watch-stream [settings]
     (cb-let [threads] (bk/load-watch-items nil)
       (if threads
@@ -995,7 +1013,7 @@
         (let [t-h (dom/getElement "thread-headlines")]
           (set! (.-innerHTML t-h) the-list-is-empty))))))
 
-(defn ^:export inline-image-stream [settings]
+(defn ^:export images [settings]
   (with-page inline-image-stream [settings]
     (let [thread-headlines (dom/getElement "thread-headlines")]
       (set! (.-innerHTML thread-headlines) obtaining-data))
@@ -1007,15 +1025,37 @@
       (cb-let [images] (bk/get-thread-images {:target target :thread-id thread-id})
               (insert-threads images)))))
 
-(defn ^:export display-help [settings]
+(defn ^:export help [settings]
   (with-page manual [settings]   
     (let [manual (.querySelector js/document "#manual")]
-      (set! (.-src manual) (file-base (.-src manual))))))
+      (set! (.-src manual) (file-base (.getAttribute manual "src"))))))
 
-(defn ^:export main [settings]
+(defn ^:export urlbar [settings]
+  (with-page urlbar [settings]   
+
+    (let [address-txt (dom/getElement "address-txt")
+          go-btn (goog.ui/decorate (dom/getElement "go-btn"))
+          go-btn-handler (fn [e]
+                           (when (not (str/blank? (.-value address-txt)))
+                             (set! (.-location js/window)
+                                   (str "/_/" (.-value address-txt)
+                                        (when (.-checked (dom/getElement "text-only"))
+                                          ":txt")))))]
+      (events/listen address-txt
+                     goog.events.EventType/KEYPRESS
+                     (fn [e]
+                       (when (= (.-keyCode e) 13)
+                         (go-btn-handler e))))
+      (events/listen go-btn
+                     goog.ui.Component.EventType/ACTION
+                     go-btn-handler))))
+
+(defn ^:export main [settings url]
 ;;;;;
 ;;  (repl/connect "http://localhost:9000/repl")
 ;;;;;
+  (set! *resource* url)
+
   (with-page frontend [settings]
     (setup-snapin-buttons)
     (setup-nav-popup)

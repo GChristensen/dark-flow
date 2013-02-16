@@ -2,7 +2,7 @@
 // 
 // (C) 2013 g/christensen (gchristnsn@gmail.com)
 
-function get_pages(cons_xhr, port, data)
+function get_pages(cons_xhr, port, prefix, data)
 {
     if (data.payload.length > 0)
     {
@@ -60,7 +60,7 @@ function get_pages(cons_xhr, port, data)
                      check_responses(this);
                  };
 
-                 req.open("get", data.payload[n]);
+                 req.open("get", prefix + data.payload[n]);
                  req.responseType = "text";
                  req.send();
              })();
@@ -81,7 +81,7 @@ function build_multipart_body(o)
     
     for (k in o)
     {
-        let item = o[k];
+        var item = o[k];
         if (Array.isArray(item)) item = item[0];
 
         if (typeof(item) == 'string')
@@ -102,7 +102,7 @@ function build_multipart_body(o)
     return {boundary: boundary, body: body};
 }
 
-function post_form(cons_xhr, port, data)
+function post_form(cons_xhr, port, prefix, data)
 {
     var req = cons_xhr();
     req.onload = function() 
@@ -124,7 +124,7 @@ function post_form(cons_xhr, port, data)
 
     multipart = build_multipart_body(data.payload.form);
 
-    req.open("POST", data.payload.url);
+    req.open("POST", prefix + data.payload.url);
     if (data.payload.timeout)
         req.timeout = data.payload.timeout;
     if (data.payload.referer)
@@ -133,7 +133,6 @@ function post_form(cons_xhr, port, data)
 
     req.sendAsBinary(multipart.body);
 }
-
 
 exports.get_pages = get_pages;
 exports.post_form = post_form;
