@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+  .goog-combobox input 
+  {
+    width: 100px;
+  }
+
+  .goog-combobox .goog-menu
+  {
+    width: 120px;
+  }
+
+  .mobile-controls
+  {
+    margin-left: auto;
+    margin-right: auto;
+    width: 460px;
+    margin-top: 30px;
+    text-align: left;
+  }
+
+  .mobile-selector
+  {
+    margin-left: auto;
+    margin-right: auto;
+    width: 460px;
+    margin-top: 10px;
+    text-align: center;
+    line-height: 200%;
+  }
+
+  .sel-link
+  {
+    cursor: pointer;
+  } 
+  </style>
+
+  <script type="text/javascript" class="uncompiled-script" src="js/goog/base.js"></script>
+  <script type="text/javascript" src="js/mobile.js"></script>	
+  <script type="text/javascript" src="js/utils/utils.js"></script>	
+  <script type="text/javascript">
+    var user_agent = __ua.toLowerCase();
+    var isMobile = (user_agent.indexOf("android") > -1 || user_agent.indexOf("ipad") > -1);
+    if(isMobile) 
+    {
+      loadjscssfile("/css/mobile.css", "css");
+    }
+  </script>
+
+  <script type="text/javascript" class="uncompiled-script">
+    goog.require('mobile');
+  </script>
+
+</head>
+
+<body>
+  <div id="content" class="tab-content">
+	<div id="tabs">
+      <div id="thread-tabs_content" class="tab-thread-tabs_content goog-tab-content">
+        <div class="science-stream">
+          <div class="mobile-controls black">
+            <!--div style="float: left; margin-right: 10px; padding-top: 3px;"><img src="/images/fav.png"/></div-->
+            <!--div id="cbx-chan" style="float: left; margin-right: 10px;"></div>
+            <div id="cbx-board" style="float: left; margin-right: 10px;"></div>
+            <div id="cbx-pages" style="float: left; margin-right: 20px;"></div-->
+            <input id="address-txt" type="text" style="float: left; width: 380px;" />
+            <!--div id="up-btn" class="gold goog-flat-button" style="float: left; height: auto; top: -6px; margin-right: 10px;">&#x25b2;</div>
+            <div id="up-btn" class="gold goog-flat-button" style="float: left; height: auto; top: -6px; margin-right: 20px;">&#x25bc;</div-->
+            <div id="go-btn" class="gold goog-flat-button" style="height: auto; top: -2px;">Go</div>
+            <div style="margin-top: 10px; padding-left: 20px;">
+              <span class="gold">
+                <input type="checkbox" id="text-only"></input>
+                <label for="text-only">Text only</label>
+              </span>
+            </div>
+            <!--div id="chan-selector" class="mobile-selector"></div>
+            <div id="board-selector" class="mobile-selector"></div>
+            <div id="option-selector" class="mobile-selector"></div-->
+          </div>
+        </div>
+	  </div>
+    </div>
+  </div>
+
+
+</body>
+
+</html>

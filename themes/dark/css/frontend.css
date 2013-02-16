@@ -14,7 +14,7 @@ body, html
 
 #head-container
 {
-	background-color: #FFFFEE;
+	background-color: #282828;
 	margin: 0 10px; 
 }
 
@@ -62,7 +62,6 @@ img.logo
 .bar-btn
 {
     font-size: 14px;
-    color: #800000;
 }
 
 .btn-text
@@ -108,7 +107,7 @@ img#loading
 
 #tabs
 {
-	position: relative;
+    position: relative;
 	padding: 0 8px;
 	height: 100%;
 }
@@ -143,16 +142,16 @@ img#loading
 	top: 0 !important;
     border-style: solid !important;
     border-width: 1px !important;
-    border-color: #800000 !important;
+    border-color: #757575 !important;
 }
 
 .goog-tab-content
 {
     margin: 0;
-    border: 1px solid #800000;
+    border: 1px solid #757575;
     border-top: 0;
     padding: 4px 8px;
-    background: #FFFFEE;
+    background: #282828;
 }
 
 #tab-page
@@ -164,7 +163,7 @@ img#loading
 
 #thread-list-caption
 {
-	color: #800000;
+	color: #DDC771;
 	float: left;
 	margin-top: 4px;
 }
@@ -172,7 +171,7 @@ img#loading
 #thread-list-buttons
 {
 	height: 32px;
-	border-bottom: 1px solid #800000;
+	border-bottom: 1px solid #757575;
 }
 
 #busy-indicator
@@ -190,11 +189,6 @@ img#loading
 	margin-top: 4px;
 }
 
-.board-link:visited
-{
-    color: navy;
-}
-
 #thread-headlines
 {
 	overflow-y: auto;
@@ -206,7 +200,7 @@ img#loading
 
 #thread-headlines td
 {
-  border-bottom: 1px solid #800000;
+  border-bottom: 1px solid #757575;
 }
 
 #mass-check
@@ -252,8 +246,8 @@ table.thread-stream, table#thread-stream
 	position: absolute;
 	top: 0;
 	right: 0;
-	background-color: #FFFFEE;
-	border: 1px solid #800000;
+	background-color: #282828;
+	border: 1px solid #757575;
 	padding: 1px;
 }
 
@@ -268,10 +262,10 @@ table.thread-stream, table#thread-stream
 
 .thread-group
 {
-	background-color: #F0E0D6;
+	background-color: #181818;
     padding: 4px;
 	font-weight: bold;
-	color: #800000;
+	color: #DDC771;
 }
 
 .watch-thread-control
@@ -283,12 +277,6 @@ table.thread-stream, table#thread-stream
 {
 	text-decoration: none;
 	cursor: pointer;
-    color: #800000;
-}
-
-.expand-trigger:hover
-{
-    color: #c30d10;
 }
 
 .control-buttons
@@ -299,7 +287,7 @@ table.thread-stream, table#thread-stream
 
 .arc-rate
 {
-	color: #800000;
+	color: #DDC771;
 	font-size: 80%;
 }
 
@@ -316,14 +304,14 @@ table.thread-stream, table#thread-stream
 .watch-trigger-disabled
 {
     font-size: 120%;
-	color: #800000;
+	color: #DDC771;
 	cursor: pointer;
 }
 
 .watch-trigger-enabled
 {
     font-size: 120%;
-	color: #800000;
+	color: #DDC771;
 	cursor: pointer;
 }
 
@@ -342,17 +330,6 @@ table.thread-stream, table#thread-stream
     font-family: "Lucida Console", Courier, monospace;
 }
 
-.watch-trigger-disabled:hover
-{
-    color: #c30d10;
-}
-
-.watch-trigger-enabled:hover
-{
-    color: #c30d10;
-}
-
-
 .service-pane-container
 {
 	margin-top: 4px;
@@ -366,7 +343,7 @@ table.thread-stream, table#thread-stream
 .delta-posts
 {
 	font-size: 80%;
-	color: #22650d;
+	color: white;
 	margin-bottom: 4px;
 	display: block;
 }
@@ -374,18 +351,12 @@ table.thread-stream, table#thread-stream
 .delta-link
 {
 	text-decoration: none;
-    color: #800000;
-}
-
-.delta-link:hover
-{
-    color: #c30d10;
 }
 
 .delta-posts-lazy
 {
 	font-size: 80%;
-	color: #800000;
+	color: #DDC771;
 	cursor: pointer;
 	margin-bottom: 4px;
 	display: block;
@@ -397,14 +368,9 @@ table.thread-stream, table#thread-stream
 
 .forget-trigger
 {
-	color: #800000;
+	color: #DDC771;
 	font-size: 14pt;
 	cursor: pointer;
-}
-
-.forget-trigger:hover
-{
-    color: #c30d10;
 }
 
 .expand-trigger
@@ -413,17 +379,10 @@ table.thread-stream, table#thread-stream
 	top: -2px;
 }
 
-.iv-trigger-menu, .iv-trigger, .new-thread, .reply-btn
+.iv-trigger-menu, .iv-trigger, .wf-trigger. .new-thread, .reply-btn
 {
-    color: #800000;
 	cursor: pointer !important;
 }
-
-.iv-trigger-menu:hover, .iv-trigger:hover, .new-thread:hover, .reply-btn:hover
-{
-    color: #c30d10;
-}
-
 
 .wf-trigger
 {
@@ -438,7 +397,7 @@ table.thread-stream, table#thread-stream
 
 .iv-border
 {
-    border: 1px solid #800000;
+    border: 1px solid #757575;
     padding-left: 2px;
     padding-right: 2px;
     display: inline-block;
@@ -457,17 +416,12 @@ table.thread-stream, table#thread-stream
 
 .thread-header
 {
-    background-color: #F0E0D6;
-}
-
-.thread-header
-{
 	cursor: pointer;
 }
 
 .thread-title, .reply-title
 {
-	color: #CC1105;
+	color: #698CC0;
 	font-weight: bold;
 	cursor: default;
 }
@@ -497,12 +451,12 @@ table.thread-stream, table#thread-stream
 .replies
 {
 	display: none;
-	border-top: 1px solid #800000;
+	border-top: 1px solid #757575;
 }
 
 .reply
 {
-	border-bottom: 1px solid #800000;
+	border-bottom: 1px solid #757575;
 }
 
 .oppost-text, .post-text, .watch-oppost-text
@@ -519,7 +473,7 @@ table.thread-stream, table#thread-stream
 {
 	font-size: 80%;
 	font-weight: bold;
-	color: #22650d;
+	color: #6bae56;
 	cursor: default;
 }
 
@@ -572,7 +526,7 @@ table.thread-stream, table#thread-stream
 
 .onwatch
 {
-	border-color: orange !important;
+	border-color: #698CC0 !important;
 }
 
 .before-read
@@ -604,7 +558,7 @@ table.thread-stream, table#thread-stream
 
 .noimage
 {
-	color: #800000;
+	color: #DDC771;
 	font-size: 80%;
 }
 
@@ -629,30 +583,30 @@ iframe
 
 .unkfunc, .quote
 {
-	color: #526c02;
+	color: #B6D648;
 	margin: 4px 0 !important;
 }
 
 .abbrev
 {
-	color: #800000;
+	color: #757575;
 	margin: 4px 0 !important;
 }
 
 span.spoiler, span[onmouseout*="color=\'black\'"] {
-  background:none repeat scroll 0 0 #f0d0b6 !important;
-  color:#f0d0b6 !important;
+  background:none repeat scroll 0 0 #575757 !important;
+  color:#575757 !important;
 }
 
 span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
-	color: #800000 !important;
+	color: #48B0FD !important;
 }
 
 .popup, .nav-popup
 {
     visibility: hidden;
-	background-color: #FFFFEE;
-	border: 1px solid #800000;
+    background-color: #282828;
+	border: 1px solid #757575;
 	position: absolute;
 	max-width: 70%;
 	padding: 4px;
@@ -660,7 +614,7 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
 
 .nav-popup
 {
-    background-color: #F0E0D6;
+    background-color: #181818;
     max-width: 80%;
     border-left: none;
     border-bottom: none;
@@ -710,6 +664,26 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
 	height: 431px;
 }
 
+
+.mobile-controls
+{
+    margin-left: auto;
+    margin-right: auto;
+    width: 460px;
+    margin-top: 30px;
+    text-align: left;
+}
+
+.mobile-selector
+{
+    margin-left: auto;
+    margin-right: auto;
+    width: 460px;
+    margin-top: 10px;
+    text-align: center;
+    line-height: 200%;
+}
+
 .load-indicator
 {
     margin-top: 1.5em;
@@ -733,7 +707,7 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
 
 .form-header
 {
-    background-color: #F0E0D6;
+    background-color: #181818;
     padding: 2px;
 }
 
@@ -744,30 +718,17 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
     margin-bottom: 6px;
     margin-right: 4px;
     display: inline-block;
-    color: #800000;
 }
 
 .header-btn
 {
    cursor: pointer; 
-   color: #800000;
 }
-
-.header-btn:hover
-{
-   color: #c30d10;
-}
-
 
 .reply-btn
 {
     -moz-user-select: -moz-none;    
     user-select: none;
-}
-
-#postform textarea
-{
-    color: black !important;
 }
 
 .post-error
@@ -776,7 +737,7 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
     padding-left: 2px;
     padding-top: 4px;
     padding-right: 2px;
-    border-top: 1px solid #800000;
+    border-top: 1px solid #757575;
     display: none;
 }
 
@@ -788,10 +749,10 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
     line-height: 16px;
     left: 0;
     bottom: 0;     
-    background-color: #F0E0D6;
-    border-right: 1px solid #800000;
-    border-top: 1px solid #800000;
-	color: #800000;
+    background-color: #181818;
+    border-right: 1px solid #757575;
+    border-top: 1px solid #757575;
+	color: #DDC771;
     text-align: center;
     padding-top: 1px;
     margin: 0;
@@ -820,7 +781,7 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
 
 #postform div, #postform label
 {
-    color: #800000 !important;
+    color: #B0C4DE !important;
 }
 
 /* 4chan.org */
