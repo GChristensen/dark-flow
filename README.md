@@ -14,4 +14,4 @@ Currently Dark Flow could run as:
   store data on a client, this narrows its compatibility to Firefox and Chrome browsers
   (including Android versions).
 
-See the manual for more information.
+See the [manual](https://github.com/GChristensen/dark-flow/blob/master/manual.png) for more information.
