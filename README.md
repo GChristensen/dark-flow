@@ -4,7 +4,7 @@ Dark Flow
 An advanced imageboard aggregator.
 
 Dark Flow is a complete client-side port of the 
-[Dark Matter](https://github.com/GChristensen/dm-browser) 
+[Dark Matter](https://github.com/GChristensen/dm-browser#readme) 
 web-application, which includes all feautres of the former except the archive 
 functionality.
 
