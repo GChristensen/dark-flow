@@ -4,6 +4,15 @@
 (defmacro cb-let [[& args] call & body]
   (concat call [`(fn [~@args] ~@body)]))
 
+;; performs the call only when pred is true
+(defmacro cb-let? [pred [& args] call & body]
+  (let [gcallback (gensym)
+        n-args (count args)]
+    `(let [~gcallback (fn [~@args] ~@body)]
+       (if ~pred
+         ~(concat call [gcallback])
+         (~gcallback ~@(repeat n-args nil))))))
+
 (defmacro with-page [page [& args] & body]
   `(cb-let [html#] (~(symbol (str "bk/get-" page "-html")) ~@args)
      (~'setup-themed-vars (:theme ~'settings))

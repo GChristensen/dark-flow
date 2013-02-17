@@ -14,6 +14,8 @@ var comm = require("comm");
 
 var theme = "dark";
 
+var data_version = "2";
+
 // db initialization ///////////////////////////////////////////////////////////
 
 db.init("dark-flow-data.sqlite", 
@@ -26,6 +28,21 @@ db.init("dark-flow-data.sqlite",
 
        db.put("settings", "data_version", {"content": "1"});
    });
+
+db.get("settings", "content", {where: "id", eq: "data_version"},
+  function(value)
+  {
+      var i_value = parseInt(value);
+      if (i_value < parseInt(data_version))
+      {
+          var conn = db.open();
+          if (i_value < 2)
+              conn.executeSimpleSQL("ALTER TABLE board ADD COLUMN seen text;");
+
+          db.put("settings", "data_version", {"content": data_version});
+      }
+  });
+
 
 // protocol handler ////////////////////////////////////////////////////////////
 
@@ -177,5 +194,6 @@ function cons_page_mod(entry_point)
 cons_page_mod();
 cons_page_mod("help");
 cons_page_mod("watch");
+cons_page_mod("video");
 cons_page_mod("images");
 cons_page_mod("settings");

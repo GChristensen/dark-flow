@@ -25,6 +25,8 @@ function open_db()
     }
 }
 
+exports.open = open_db;
+
 exports.init = function init(database, init) 
 {
     fileDirectoryService.append(database);

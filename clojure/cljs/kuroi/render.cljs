@@ -355,3 +355,5 @@
 (em/deftemplate manual :compiled "templates/manual.html" [])
 
 (em/deftemplate urlbar :compiled "templates/urlbar.html" [])
+
+(em/deftemplate video :compiled "templates/video-stream.html" [])
