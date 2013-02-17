@@ -592,6 +592,7 @@ table.thread-stream, table#thread-stream
 	max-height: 58px;
 	max-width: 60px;
 	border: 0;
+    cursor: pointer;
 }
 
 .watch-image

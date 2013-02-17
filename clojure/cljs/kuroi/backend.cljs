@@ -26,12 +26,14 @@
 
 (def ^:const *forget-queue-size* 100)
 
+(def the-list-is-empty "<div class=\"load-indicator\">The list is empty</div>")
+
 (defn distinct-by [f coll]
   (loop [xs coll out [] seen #{}]
     (let [x (first xs)
           p (f x)]
       (if x
-        (recur (next xs) (if (contains? seen p) out (conj out x)) (conj seen p))
+        (recur (rest xs) (if (seen p) out (conj out x)) (conj seen p))
         out))))
 
 ;; url parsing ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -77,7 +79,7 @@
            :img (and (s-in? url ":img") (not (s-in? url ":!img"))) ; image stream
            :sortid (and (s-in? url ":sortid") (not (s-in? url ":!sortid"))) ; sort threads by id
            :rev (and (s-in? url ":rev") (not (s-in? url ":!rev"))) ; the oldest threads first
-;           :xpnd (and (s-in? url ":xpnd") (not (s-in? url ":!xpnd"))) ; expand all items
+           :new (and (s-in? url ":new") (not (s-in? url ":!new"))) ; show only threads with new replies 
            :filter (when term (.toLowerCase term)) ; search text
            :deep (s-in? url ":deep") ; deep search
            :chain (s-in? url ":chain") ; chained query
@@ -120,34 +122,39 @@
     (cb-let [response] (io/get-pages (pp/target-pages target key))
       (if (= (:state response) "ok") 
         (let [pages (:pages response)
-              threads (pp/parse-page (first pages) target :get-metadata true)
+              threads (pp/parse-page (first pages) target :get-metadata (not (:subsequent target)))
               thread-meta (meta threads)
               threads (concat threads
                               (reduce concat (map #(pp/parse-page % target) 
                                                   (rest pages))))
               threads (if (:rev target) (reverse threads) threads)
-              return #(callback (render/threads %1 target) %2 thread-meta)]
+              return #(callback (render/threads %1 target) %2 thread-meta)
+              return-fail #(callback nil nil %)]
           (if (and (:filter target) (not (seq threads)))
             ;; if the :search url option is specified and nothing was found
-            (callback nil nil (merge thread-meta {:error "" 
-                                                  :alert (str "'" (:filter target) "' not found.")}))
+            (return-fail (merge thread-meta {:error "" 
+                                             :alert (str "'" (:filter target) "' not found.")}))
             (if (:img target)
-              (return threads {:images true :shown (count threads)})
+              (if (seq threads)
+                (return threads {:images true :shown (count threads)})
+                (return-fail (merge thread-meta {:error the-list-is-empty})))
               (cb-let [settings] (opts/load-settings)
                 (let [target (if (or (:txt target) (:force-text settings)) 
                                (assoc target :force-text true) 
                                target)]
                   (cb-let [threads stats] (filt/filter-threads threads target)
-                    (let [return #(callback (render/threads % target) stats thread-meta)]
-                      (if (:sortid target)
-                        (cb-let [last-id] (io/get-data 'board 'last_id (:prefix target))
-                          (io/put-data 'board (:prefix target) 
-                                       {:last_id (:id (first (drop-while :onwatch threads)))})
-                          (if (and last-id (not (:filter target)))
-                            (return (mark-new-threads last-id threads))
-                            (return threads)))
-                        (return threads)))))))))
-          (callback nil nil nil)))))
+                    (if (seq threads)
+                      (let [return #(callback (render/threads % target) stats thread-meta)]
+                        (if (:sortid target)
+                          (cb-let [last-id] (io/get-data 'board 'last_id (:prefix target))
+                            (io/put-data 'board (:prefix target) 
+                                         {:last_id (:id (first (drop-while :onwatch threads)))})
+                            (if (and last-id (not (:filter target)))
+                              (return (mark-new-threads last-id threads))
+                              (return threads)))
+                          (return threads)))
+                      (return-fail (merge thread-meta {:error the-list-is-empty})))))))))
+        (callback nil nil nil)))))
 
 (defn get-thread-posts [request callback]
   (let [{:keys [thread-id post-count target]} request
@@ -351,3 +358,6 @@
 
 (defn get-urlbar-html [_ callback]
   (callback (render/urlbar)))
+
+(defn get-video-html [_ callback]
+  (callback (render/video)))

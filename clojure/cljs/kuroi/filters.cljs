@@ -10,7 +10,7 @@
    [clojure.string :as str]
    [cljs.reader :as reader]
    )
-  (:use-macros [kuroi.macros :only [cb-let]]))
+  (:use-macros [kuroi.macros :only [cb-let cb-let?]]))
 
 (defn re-quote [s]
   (let [special (set ".?*+^$[]\\(){}|")
@@ -80,21 +80,37 @@
                     reply))
                 (:children thread)))))
 
-(defn- sort-by-id
-  ([threads]
-     (sort-by #(let [n (js/parseInt (:id %))]
-                 (if (js/isNaN n) 0 n))
-               >
-               threads))
-  ([threads target]
-     (if (:sortid target)
-       (sort-by #(let [n (js/parseInt (:id %))]
-                   (if (js/isNaN n) 0 n))
-                (if (:rev target) < >) 
-                threads)
-       threads)))
+(defn- sort-by-id [threads]
+  (sort-by #(let [n (js/parseInt (:id %))]
+              (if (js/isNaN n) 0 n))
+           >
+           threads))
 
-(defn- do-filter [threads target callback forgotten-threads threads-on-watch]
+(defn- sort-by-id? [target threads]
+  (if (:sortid target)
+    (sort-by #(let [n (js/parseInt (:id %))]
+                (if (js/isNaN n) 0 n))
+             (if (:rev target) < >) 
+             threads)
+    threads))
+
+(defn- filter-seen? [target threads seen-threads]
+  (let [seen (into {} (map (fn [th] 
+                             (let [last-reply (:id (last (:children th)))]
+                               [(:id th) (if (nil? last-reply) "0" last-reply)]))
+                           threads))
+        to-show (when (and seen-threads (:new target))
+                  (set (map key (filter #(let [prev (find seen-threads (key %))]
+                                                 (or (not prev) 
+                                                     (> (js/parseInt (val %))
+                                                        (js/parseInt (val prev)))))
+                                              seen))))]
+    (io/put-data 'board (:prefix target) {:seen (pr-str seen)})
+    (if to-show
+      (filter #(to-show (:id %)) threads)
+      threads)))
+
+(defn- do-filter [threads target callback forgotten-threads threads-on-watch seen-threads]
   (let [settings (settings/get-for target)
         pin-watched? (:pin-watch-items settings)
         wf-enabled? (:wf-enabled settings)
@@ -133,29 +149,29 @@
               
               :default (recur (next all) (conj shown th) watch filtered forgotten))
 
-        (if (and pin-watched? threads-on-watch)
-          (let [shown (sort-by-id shown target)
-                out-of-scope (map (fn [kv] (let [w (second kv)]
-                                             (assoc w
-                                               :onwatch true
-                                               :last-id (:last-id w)
-                                               :page-index "out of scope")))
-                                  (filter (fn [[k v]] (not (contains? watch k))) 
-                                          threads-on-watch))
-                threads-on-watch (sort-by-id (concat (map (fn [kv] (second kv))
-                                                          watch) 
-                                                     out-of-scope))
-                all-threads (concat threads-on-watch shown)]
-            (callback 
-             (if wf-enabled? 
-               (map #(filter-replies wf-post % target) all-threads) 
-               all-threads)
-             {:shown (count shown) 
-              :filtered filtered 
-              :forgotten forgotten 
-              :watch (count watch)
-              :watch-total (count threads-on-watch)}))
-          (let [shown (sort-by-id shown target)]
+        (let [shown (sort-by-id? target shown)
+              shown (filter-seen? target shown seen-threads)]
+          (if (and pin-watched? threads-on-watch)
+            (let [out-of-scope (map (fn [kv] (let [w (second kv)]
+                                               (assoc w
+                                                 :onwatch true
+                                                 :last-id (:last-id w)
+                                                 :page-index "out of scope")))
+                                    (filter (fn [[k v]] (not (contains? watch k))) 
+                                            threads-on-watch))
+                  threads-on-watch (sort-by-id (concat (map (fn [kv] (second kv))
+                                                            watch) 
+                                                       out-of-scope))
+                  all-threads (concat threads-on-watch shown)]
+              (callback 
+               (if wf-enabled? 
+                 (map #(filter-replies wf-post % target) all-threads) 
+                 all-threads)
+               {:shown (count shown) 
+                :filtered filtered 
+                :forgotten forgotten 
+                :watch (count watch)
+                :watch-total (count threads-on-watch)}))
             (callback
              (if wf-enabled? (map #(filter-replies wf-post % target) shown) shown)
              {:shown (count shown) 
@@ -166,9 +182,12 @@
 
 (defn filter-threads [threads target callback]
   (cb-let [forgotten-threads-str] (io/get-data 'forgotten 'queue (:prefix target))
-    (cb-let [threads-strs] (io/get-data* 'watch 'oppost {:where "board" :eq (:prefix target)})
-      (let [forgotten-threads (set (seq (JSON/parse forgotten-threads-str)))
-            threads-on-watch (when (and (seq threads-strs) (not (:filter target)))
-                               (into {} (map (fn [w] [(:internal-id w) w])
-                                             (map reader/read-string threads-strs))))]
-        (do-filter threads target callback forgotten-threads threads-on-watch)))))
+    (cb-let [watch-thread-strs] (io/get-data* 'watch 'oppost {:where "board" :eq (:prefix target)})
+      (cb-let? (:new target) [seen-threads-str] (io/get-data 'board 'seen (:prefix target))
+        (let [forgotten-threads (set (seq (JSON/parse forgotten-threads-str)))
+              threads-on-watch (when (and (seq watch-thread-strs) (not (:filter target)))
+                                 (into {} (map (fn [w] [(:internal-id w) w])
+                                               (map reader/read-string watch-thread-strs))))
+              seen-threads (when seen-threads-str
+                             (reader/read-string seen-threads-str))]
+          (do-filter threads target callback forgotten-threads threads-on-watch seen-threads))))))

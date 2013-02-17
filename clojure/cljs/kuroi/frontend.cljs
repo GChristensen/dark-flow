@@ -222,6 +222,57 @@
         (bk/make-target (str (.-innerHTML board-link))))))
     *target*))
 
+;; inline view ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn inline-dialog [title target]
+  (let [dialog (goog.ui.Dialog.)
+        close-elt (. dialog (getTitleCloseElement))]
+    (if (vector? title)
+      (let [title-elt (. dialog (getTitleTextElement))]
+        (set! (.-innerHTML title-elt) (first title)))
+      (.setTitle dialog title))
+    (.setContent dialog (str "<iframe src=\"" target "\"/>")
+    (.setButtonSet dialog nil)
+    (set! (.-innerHTML close-elt) "Close")
+    (set! (.-className close-elt) "modal-dialog-title-close goog-flat-button")
+    (.setDisposeOnHide dialog true)
+    (.setVisible dialog true))
+    false))
+
+(defn inline-view-link [link]
+  (let [title (str "<a class=\"title-link\" target=\"_blank\" href=\"" link "\">" 
+                   link "</a>")]    
+    (inline-dialog [title] link)))
+
+(defn ^:export inline-view-thread [a]
+  (let [link-elt (or (child-by-class (.-parentNode a) "thread-no")
+                     (child-by-class (.-parentNode a) "reply-no"))
+        thread-link (.-href link-elt)]
+    (inline-view-link thread-link)))
+
+(defn ^:export inline-view-reflink [a]
+  (inline-view-link (.-href a)))
+
+(defn ^:export show-thread-images [a from-thread-stream?]
+  (let [thread-no (child-by-class (.-parentNode a) "thread-no")
+        thread-link (.-href thread-no)
+        target (if from-thread-stream?
+                 (let [thread-line (parent-by-class a "thread-line")]
+                       (get-target thread-line))
+                 *target*)
+        target (assoc target :img true :inline true)
+        iframe-link (str *protocol* ":images?target=" (js/encodeURI (pr-str target))
+                         "&thread-id=" (.-textContent thread-no))
+        title (str "<a class=\"title-link\" target=\"_blank\" href=\"" thread-link "\">" 
+                   thread-link "</a>")]    
+    (inline-dialog [title] iframe-link)))
+
+(defn ^:export show-thread-video [video-pic]
+  (let [video-id (second (re-find #".*ytimg.com/[^/]+/([^/]+)/" video-pic ))
+        url (when video-id (str "http://youtube.com/embed/" video-id "?autoplay=1"))]
+    (when url
+      (inline-dialog "Video" (str *protocol* ":video?video=" (js/encodeURIComponent url))))))
+
 ;; post image expansion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn make-moveable [el]
@@ -262,89 +313,50 @@
             (str (- cur-y (* (/ new-h old-h) (- cur-y old-t))) "px")))))
 
 
-(defn ^:export expand-image [a full-w full-h]    
-  (let [full (.-singleNodeValue (.evaluate js/document ".//img[@id=\"_fullimg\"]" a nil 8 nil))]
-    (if full ; shown
-      (if (not (.-moved full))
-        (do
-          (set! (.-display (.-style full))
-                (if (= (.-display (.-style full)) "none") "" "none"))
-          (js/setTimeout #(.removeChild (.-parentNode full) full) 0))
-        (set! (.-moved full) false))
-      ; none
-      (let [full (.createElement js/document "img")
-            existing (dom/getElement "_fullimg")
-            scr-w (.-clientWidth (.-body js/document))
-            scr-h (.-innerHeight js/window)
-            [new-w new-h] (if (or (> full-w scr-w) (> full-h scr-h))
-                            (let [new-w (/ (* full-w scr-h) full-h)
-                                  new-h (/ (* full-h scr-w) full-w)]
-                              [(if (> new-w scr-w) scr-w new-w) (if (<= new-w scr-w) scr-h new-h)])
-                            [full-w full-h])]
-        (when existing
-          (.removeChild (.-parentNode existing) existing))
-        (.addEventListener full "DOMMouseScroll" resize-image) ; Chrome: 'mousewheel'
-        (make-moveable full)
-        (set-attrs full
-                   {"id"     "_fullimg"
-                    "src"    (.-href a)
-                    "title"  (.-href a)
-                    "alt"    (.-href a)
-                    "width"  new-w
-                    "height" new-h
-                    "style"  (str "display: block;"
-                                 "position: fixed;"
-                                 "z-index: 5000;"
-                                 " border: 1px solid black;"
-                                 "left:" (/ (- scr-w new-w) 2) "px;"
-                                 "top:" (/ (- scr-h new-h) 2) "px")
-                    })
-        (.appendChild a full))))
-  false)
-
-;; inline view ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn inline-dialog [title target]
-  (let [dialog (goog.ui.Dialog.)
-        close-elt (. dialog (getTitleCloseElement))]
-    (if (vector? title)
-      (let [title-elt (. dialog (getTitleTextElement))]
-        (set! (.-innerHTML title-elt) (first title)))
-      (.setTitle dialog title))
-    (.setContent dialog (str "<iframe src=\"" target "\"/>")
-    (.setButtonSet dialog nil)
-    (set! (.-innerHTML close-elt) "Close")
-    (set! (.-className close-elt) "modal-dialog-title-close goog-flat-button")
-    (.setVisible dialog true))
-    false))
-
-(defn inline-view-link [link]
-  (let [title (str "<a class=\"title-link\" target=\"_blank\" href=\"" link "\">" 
-                   link "</a>")]    
-    (inline-dialog [title] link)))
-
-(defn ^:export inline-view-thread [a]
-  (let [link-elt (or (child-by-class (.-parentNode a) "thread-no")
-                     (child-by-class (.-parentNode a) "reply-no"))
-        thread-link (.-href link-elt)]
-    (inline-view-link thread-link)))
-
-(defn ^:export inline-view-reflink [a]
-  (inline-view-link (.-href a)))
-
-(defn ^:export show-thread-images [a from-thread-stream?]
-  (let [thread-no (child-by-class (.-parentNode a) "thread-no")
-        thread-link (.-href thread-no)
-        target (if from-thread-stream?
-                 (let [thread-line (parent-by-class a "thread-line")]
-                       (get-target thread-line))
-                 *target*)
-        target (assoc target :img true :inline true)
-        iframe-link (str *protocol* ":images?target=" (js/encodeURI (pr-str target))
-                         "&thread-id=" (.-textContent thread-no))
-        title (str "<a class=\"title-link\" target=\"_blank\" href=\"" thread-link "\">" 
-                   thread-link "</a>")]    
-    (inline-dialog [title] iframe-link)))
+(defn ^:export expand-image [a full-w full-h]
+  (if (or (str/blank? (.-href a)) (= "#" (.-href a)))
+    (let [img (.querySelector a "img")
+          src (when img (.-src img))]
+      (when src 
+        (show-thread-video src)))
+    (let [full (.-singleNodeValue (.evaluate js/document ".//img[@id=\"_fullimg\"]" a nil 8 nil))]
+      (if full ; shown
+        (if (not (.-moved full))
+          (do
+            (set! (.-display (.-style full))
+                  (if (= (.-display (.-style full)) "none") "" "none"))
+            (js/setTimeout #(.removeChild (.-parentNode full) full) 0))
+          (set! (.-moved full) false))
+                                        ; none
+        (let [full (.createElement js/document "img")
+              existing (dom/getElement "_fullimg")
+              scr-w (.-clientWidth (.-body js/document))
+              scr-h (.-innerHeight js/window)
+              [new-w new-h] (if (or (> full-w scr-w) (> full-h scr-h))
+                              (let [new-w (/ (* full-w scr-h) full-h)
+                                    new-h (/ (* full-h scr-w) full-w)]
+                                [(if (> new-w scr-w) scr-w new-w) (if (<= new-w scr-w) scr-h new-h)])
+                              [full-w full-h])]
+          (when existing
+            (.removeChild (.-parentNode existing) existing))
+          (.addEventListener full "DOMMouseScroll" resize-image) ; Chrome: 'mousewheel'
+          (make-moveable full)
+          (set-attrs full
+                     {"id"     "_fullimg"
+                      "src"    (.-href a)
+                      "title"  (.-href a)
+                      "alt"    (.-href a)
+                      "width"  new-w
+                      "height" new-h
+                      "style"  (str "display: block;"
+                                    "position: fixed;"
+                                    "z-index: 5000;"
+                                    " border: 1px solid black;"
+                                    "left:" (/ (- scr-w new-w) 2) "px;"
+                                    "top:" (/ (- scr-h new-h) 2) "px")
+                      })
+          (.appendChild a full)))))
+    false)
 
 ;; popups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -647,40 +659,37 @@
       (let [t-h (dom/getElement "thread-headlines")]
         (set! (.-innerHTML t-h) error-loading-page)))))
 
+(defn load-threads [pages subsequent]
+  (let [thread-headlines (dom/getElement "thread-headlines")
+        url *resource*]
+    (set! (.-innerHTML thread-headlines) obtaining-data)
+    (if (and (> (.indexOf url "]") 0)
+             (> (.indexOf url "[") 0))
+      (start-chain url pages)
+      (do     
+        (set! *target* (bk/make-target (js/decodeURI url)))
+        (if *target*
+          (let [target (assoc *target* :subsequent subsequent)] 
+            (load-external (str "http://" (:trade target) "/favicon.ico") "ico")
+            (set! (.-innerHTML (dom/getElement "thread-list-caption"))
+                  (str "Loading " (pages target)
+                       (if (not= (pages target) 1)
+                         " pages..."
+                         " page...")))
+            (cb-let [threads stats meta] (bk/load-threads {:target target :key pages})
+                    (when-let [form (:form meta)]
+                      (.appendChild (.-body js/document) form))
+                    (when-let [navbar (:navbar meta)]
+                      (.appendChild (dom/getElement "nav-popup") navbar))
+                    (set! (.-innerHTML (dom/getElement "thread-list-caption"))
+                          (format-stats stats target))
+                    (insert-threads threads :meta meta)))
+          (let [t-h (dom/getElement "thread-headlines")]
+            (set! (.-innerHTML t-h) error-loading-page)))))))
+
 (defn refresh-handler [pages]
   (fn [e]
-    (let [thread-headlines (dom/getElement "thread-headlines")
-          url *resource*]
-      (set! (.-innerHTML thread-headlines) obtaining-data)
-      (if (and (> (.indexOf url "]") 0)
-               (> (.indexOf url "[") 0))
-        (start-chain url pages)
-        (do     
-          (set! *target* (bk/make-target (js/decodeURI url)))
-          (if  *target*
-            (do 
-              (load-external (str "http://" (:trade *target*) "/favicon.ico") "ico")
-              (set! (.-innerHTML (dom/getElement "thread-list-caption"))
-                    (str "Loading " (pages *target*)
-                         (if (not= (pages *target*) 1)
-                           " pages..."
-                           " page...")))
-              (cb-let [threads stats meta] (bk/load-threads {:target *target* :key pages})
-                      (when-let [form (:form meta)]
-                        (.appendChild (.-body js/document) form))
-                      (when-let [navbar (:navbar meta)]
-                        (.appendChild (dom/getElement "nav-popup") navbar))
-                      (set! (.-innerHTML (dom/getElement "thread-list-caption"))
-                            (format-stats stats *target*))
-                      (insert-threads threads :meta meta)))
-            (let [t-h (dom/getElement "thread-headlines")]
-              (set! (.-innerHTML t-h) error-loading-page))))))))
-
-(defn load-threads 
-  ([]
-     ((refresh-handler :pages) nil))
-  ([pages]
-     ((refresh-handler pages) nil)))
+    (load-threads pages true)))
 
 (defn ^:export expand-btn-handler [e]
   (let [expand-btn (dom/getElement "expand-btn")
@@ -812,7 +821,7 @@
                                         (do
                                           (show-reply-form element new-thread?)
                                           (if new-thread?
-                                            (load-threads :refresh)
+                                            (load-threads :refresh true)
                                             (iv-load-posts element (:replies target)))))))
              ]
 
@@ -1025,6 +1034,15 @@
       (cb-let [images] (bk/get-thread-images {:target target :thread-id thread-id})
               (insert-threads images)))))
 
+(defn ^:export video [settings]
+  (with-page video [settings]
+    (let [uri (goog.Uri. (.-href (.-location js/document)))
+          video-link (js/decodeURIComponent (.getParameterValue uri "video"))
+          video-elt (dom/getElement "video")]
+      (.setAttribute video-elt "src" video-link)
+
+)))
+
 (defn ^:export help [settings]
   (with-page manual [settings]   
     (let [manual (.querySelector js/document "#manual")]
@@ -1059,4 +1077,4 @@
   (with-page frontend [settings]
     (setup-snapin-buttons)
     (setup-nav-popup)
-    (load-threads)))
+    (load-threads :pages false)))
