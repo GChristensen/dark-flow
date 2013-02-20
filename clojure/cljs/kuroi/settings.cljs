@@ -24,6 +24,7 @@
 
 (def *default-settings*
   {:theme "dark"
+   :remember-expanded true
    :pin-watch-items true
    :watch-autoload true})
 
@@ -65,6 +66,7 @@
 
 (defn save-settings []
   (let [settings {:pin-watch-items (enabled? (dom/getElement "watch-first"))
+                  :remember-expanded (enabled? (dom/getElement "remember-expanded"))
                   :wf-title (.-value (dom/getElement "wf-title-words"))
                   :wf-post (.-value (dom/getElement "wf-post-words"))
                   :wf-enabled (enabled? (dom/getElement "wf-enable"))

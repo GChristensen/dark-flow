@@ -110,9 +110,14 @@
       (filter #(to-show (:id %)) threads)
       threads)))
 
-(defn- do-filter [threads target callback forgotten-threads threads-on-watch seen-threads]
-  (let [settings (settings/get-for target)
-        pin-watched? (:pin-watch-items settings)
+(defn- filter-expanded? [target threads expanded-threads]
+  (if expanded-threads
+    (map #(if (expanded-threads (:id %)) (assoc % :expanded true) %) threads)
+    threads))  
+
+(defn- do-filter [threads target callback settings forgotten-threads threads-on-watch 
+                  seen-threads expanded-threads]
+  (let [pin-watched? (:pin-watch-items settings)
         wf-enabled? (:wf-enabled settings)
         wf-title (:wf-title-parsed settings)
         wf-post (:wf-post-parsed settings)]
@@ -162,7 +167,8 @@
                   threads-on-watch (sort-by-id (concat (map (fn [kv] (second kv))
                                                             watch) 
                                                        out-of-scope))
-                  all-threads (concat threads-on-watch shown)]
+                  all-threads (concat threads-on-watch shown)
+                  all-threads (filter-expanded? target all-threads expanded-threads)]
               (callback 
                (if wf-enabled? 
                  (map #(filter-replies wf-post % target) all-threads) 
@@ -172,22 +178,29 @@
                 :forgotten forgotten 
                 :watch (count watch)
                 :watch-total (count threads-on-watch)}))
-            (callback
-             (if wf-enabled? (map #(filter-replies wf-post % target) shown) shown)
-             {:shown (count shown) 
-              :filtered filtered 
-              :forgotten forgotten 
-              :watch 0 
-              :watch-total 0}))))))))
+            (let [shown (filter-expanded? target shown expanded-threads)]
+              (callback
+               (if wf-enabled? (map #(filter-replies wf-post % target) shown) shown)
+               {:shown (count shown) 
+                :filtered filtered 
+                :forgotten forgotten 
+                :watch 0 
+                :watch-total 0})))))))))
 
 (defn filter-threads [threads target callback]
-  (cb-let [forgotten-threads-str] (io/get-data 'forgotten 'queue (:prefix target))
-    (cb-let [watch-thread-strs] (io/get-data* 'watch 'oppost {:where "board" :eq (:prefix target)})
-      (cb-let? (:new target) [seen-threads-str] (io/get-data 'board 'seen (:prefix target))
-        (let [forgotten-threads (set (seq (JSON/parse forgotten-threads-str)))
-              threads-on-watch (when (and (seq watch-thread-strs) (not (:filter target)))
-                                 (into {} (map (fn [w] [(:internal-id w) w])
-                                               (map reader/read-string watch-thread-strs))))
-              seen-threads (when seen-threads-str
-                             (reader/read-string seen-threads-str))]
-          (do-filter threads target callback forgotten-threads threads-on-watch seen-threads))))))
+  (let [settings (settings/get-for target)]
+    (cb-let [forgotten-threads-str] (io/get-data 'forgotten 'queue (:prefix target))
+      (cb-let [watch-thread-strs] (io/get-data* 'watch 'oppost {:where "board" :eq (:prefix target)})
+        (cb-let? (:new target) [seen-threads-str] (io/get-data 'board 'seen (:prefix target))
+          (cb-let? (:remember-expanded settings) [expanded-threads-str] 
+                   (io/get-data 'board 'expanded (:prefix target))
+          (let [forgotten-threads (set (seq (JSON/parse forgotten-threads-str)))
+                threads-on-watch (when (and (seq watch-thread-strs) (not (:filter target)))
+                                   (into {} (map (fn [w] [(:internal-id w) w])
+                                                 (map reader/read-string watch-thread-strs))))
+                seen-threads (when seen-threads-str
+                               (reader/read-string seen-threads-str))
+                expanded-threads (when expanded-threads-str
+                                   (reader/read-string expanded-threads-str))]
+            (do-filter threads target callback settings forgotten-threads threads-on-watch 
+                       seen-threads expanded-threads))))))))

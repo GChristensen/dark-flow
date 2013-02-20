@@ -12,23 +12,6 @@
 
 ;; all the imageboard specific code resides here
 
-;; correct parsing is known for:
-
-;; 4chan.org
-;; 7chan.org
-;; gurochan.net
-;; wakachan.org
-;; ichan.org (limited support)
-;; iichan.hk
-;; 0chan.hk
-;; 2ch.hk
-;; 2--ch.ru
-;; 410chan.org
-;; 5channel.net
-;; dobrochan.ru (limited support)
-;; nowere.net
-;; krautchan.net
-
 ;; utilities ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (def ^:const alt-exts {"dobrochan.ru" "xhtml", "2--ch.ru" "memhtml"})
@@ -319,6 +302,7 @@
         title-elt (select root-node "span[class*='title']")
         thumb-img (select root-node "img[src*='thumb/'], 
                                     .threadimg img,
+                                    .nothumb,
                                     .post_video_pic > img")
         image-link (select root-node "a[href*='src/'], .threadimg img")
         filesize (select root-node ".filesize, .fileinfo")
@@ -570,11 +554,13 @@
 
 (defmulti extract-navbar trade-dispatch)
 
-(defn transform-navbar [dom nodes link-p link-f]
+(defn transform-navbar [dom target nodes link-p link-f]
   (loop [nodes nodes out []]
     (if-let [node (first nodes)]
       (cond (and (= (.-tagName node) "A") (link-p node))
-            (recur (next nodes) (conj out (link-f node)))
+            (let [link (link-f node)]
+              (a-> href link (str (.getAttribute link "href") (:params target)))
+              (recur (next nodes) (conj out link)))
 
             (and (= (.-nodeType node) 3)
                  (re-find #"[\[\]|/]" (.-textContent node)))
@@ -599,7 +585,7 @@
 
 (defmethod extract-navbar "4chan.org" [dom target]
   (let [navbar-elt (select dom "#boardNavDesktop")]
-    (transform-navbar dom (seq (.-childNodes navbar-elt))
+    (transform-navbar dom target (seq (.-childNodes navbar-elt))
                       #(re-matches #".*\.org/..*" (.getAttribute % "href"))
                       #(do
                          (a-> href % (str/replace (.getAttribute % "href") "//boards." io/*scheme*))
@@ -607,7 +593,7 @@
 
 (defmethod extract-navbar "iichan.hk" [dom target]
   (let [navbar-elt (select dom ".adminbar")]
-    (transform-navbar dom (seq (.-childNodes navbar-elt))
+    (transform-navbar dom target (seq (.-childNodes navbar-elt))
                       #(re-matches #"(.*\.org/..*)|(.*/\.\./..*)" (.getAttribute % "href"))
                       #(let [l (.getAttribute % "href")]
                          (set! (.-href %) 
@@ -625,7 +611,7 @@
                          [(.createTextNode dom "[")]
                          (select* ne "a")
                          [(.createTextNode dom "]")])))]
-    (transform-navbar dom nodes
+    (transform-navbar dom target nodes
                       #(re-matches #"/[^/]+/" (.getAttribute % "href"))
                       #(let [l (.getAttribute % "href")]
                          (set! (.-textContent %) l)
@@ -646,7 +632,7 @@
 
 (defmethod extract-navbar "dobrochan.ru" [dom target]
   (when-let [navbar-elt (select dom ".adminbar")]
-    (transform-navbar dom (seq (.-childNodes navbar-elt))
+    (transform-navbar dom target (seq (.-childNodes navbar-elt))
                       #(re-matches #"/[a-zA-Z0-9-]+/index.xhtml" (.getAttribute % "href"))
                       #(let [l (.getAttribute % "href")]
                          (set! (.-href %) (str io/*scheme* (:domain target) 
@@ -657,7 +643,7 @@
   (let [navbar-elt (select dom ".navbar, body > p[align='right']")
         navbar-elt (or navbar-elt (select dom ".adminbar"))]
     (when navbar-elt
-      (transform-navbar dom (seq (.-childNodes navbar-elt))
+      (transform-navbar dom target (seq (.-childNodes navbar-elt))
                         #(re-matches #"/?[a-zA-Z0-9-]+/?(index\.x?html)?" (.-href %))
                         #(let [l (.getAttribute % "href")]
                            (set! (.-href %) (str io/*scheme* (:domain target) 

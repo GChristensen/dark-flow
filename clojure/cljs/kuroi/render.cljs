@@ -297,12 +297,28 @@
                                                      (second (:image-size th)) ")"))))
                 ;; [:.thread-oppost :> :.image-container]
                 ;; (mk/remove-when (not (:force-text target)))
+                [:.header-exp]
+                (fn [node] ;; TODO: replace with macro
+                  (if (:expanded th)
+                    ((em/do->
+                      (em/html-content "&laquo;") 
+                      (em/set-attr :expanded_ "true")) node)
+                    node))
                 [:.oppost-text]
                 (em/do->
+                 (fn [node]
+                   (if (:expanded th)
+                     ((em/set-attr :style "max-height: none;") node)
+                     node))
                  (em/html-content (:text th))
                  (em/set-attr :class (if (and (not (:force-text target)) (:image th))
                                        "image-indent oppost-text"
                                        "text-indent oppost-text")))
+                [:.replies]
+                (fn [node]
+                  (if (:expanded th)
+                    ((em/set-attr :style "display: block;") node)
+                    node))
                 [:.replies :> :.image-indent]
                 (fn [node]
                   (if (or (:force-text target) (not (:image th)))

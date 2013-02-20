@@ -8,13 +8,14 @@ var {Unknown, Factory} = require('sdk/platform/xpcom');
 var {XPCOMUtils} = Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 var pageMod = require("sdk/page-mod");
+//var cm = require("sdk/context-menu");
 var data = require("sdk/self").data;
 var db = require("persist");
 var comm = require("comm");
 
 var theme = "dark";
 
-var data_version = "2";
+var data_version = "3";
 
 // db initialization ///////////////////////////////////////////////////////////
 
@@ -32,12 +33,14 @@ db.init("dark-flow-data.sqlite",
 db.get("settings", "content", {where: "id", eq: "data_version"},
   function(value)
   {
-      var i_value = parseInt(value);
-      if (i_value < parseInt(data_version))
+      var i_ver = parseInt(value);
+      if (i_ver < parseInt(data_version))
       {
           var conn = db.open();
-          if (i_value < 2)
+          if (i_ver < 2)
               conn.executeSimpleSQL("ALTER TABLE board ADD COLUMN seen text;");
+          if (i_ver < 3)
+              conn.executeSimpleSQL("ALTER TABLE board ADD COLUMN expanded text;");
 
           db.put("settings", "data_version", {"content": data_version});
       }
@@ -119,6 +122,18 @@ function bootstrap_js(entry_point)
 
     return bootstrap_script.replace("$entry_point", entry_point);
 }
+ 
+// context menu ////////////////////////////////////////////////////////////////
+
+// "Menu Editor" extension somehow prevents SDK's context-menu module to work 
+
+// cm.Item({
+//   label: "Post to imageboard",
+//   context: cm.SelectorContext("img"),
+//   contentScript: 'self.on("click", function (node, data) {' +
+//                  ' alert("");' +
+//                  '});'
+// });
 
 // io.cljs message handling ////////////////////////////////////////////////////
 

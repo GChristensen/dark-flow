@@ -62,6 +62,7 @@
         hdlns (s-in? url ":hdlns")]
         (when (and domain board)
           {:url url
+           :params (nth (re-find #"(.*://)?[^:]+(:.*)" url) 2)
            :trade trade
            :board board
            :forum forum
@@ -127,6 +128,7 @@
               threads (concat threads
                               (reduce concat (map #(pp/parse-page % target) 
                                                   (rest pages))))
+              threads (distinct-by :internal-id threads)
               threads (if (:rev target) (reverse threads) threads)
               return #(callback (render/threads %1 target) %2 thread-meta)
               return-fail #(callback nil nil %)]
@@ -340,6 +342,17 @@
         (callback password))
       (callback password))))
   
+(defn save-expanded [request]
+  (let [{:keys [target thread-id state]} request
+        settings (opts/get-for target)]
+    (when (:remember-expanded settings)
+      (cb-let [expanded] (io/get-data 'board 'expanded (:prefix target))
+        (let [expanded (when expanded (reader/read-string expanded))
+              to-save (condp = state
+                        :expand (conj (or expanded #{}) thread-id)
+                        :collapse (disj (or expanded #{}) thread-id)
+                        #{})]
+          (io/put-data 'board (:prefix target) {:expanded (pr-str to-save)}))))))
 
 (defn get-frontend-html [_ callback]
   (callback (render/frontend)))
