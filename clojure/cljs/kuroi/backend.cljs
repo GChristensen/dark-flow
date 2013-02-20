@@ -40,7 +40,7 @@
 
 (defn make-target [url]
   (let [settings (opts/get-for nil)
-        addr (re-find #"(.*://)?(([^/]+)/([a-zA-Z0-9-]+))" url)
+        addr (re-find #"(.*://)?(([^/]+)/([a-zA-Z0-9-]+))(.*)" url)
         domain (get addr 3)
         board (get addr 4)
         trade (if addr (re-find #"[^.]+\.[^.]+$" domain) url)
@@ -62,7 +62,7 @@
         hdlns (s-in? url ":hdlns")]
         (when (and domain board)
           {:url url
-           :params (nth (re-find #"(.*://)?[^:]+(:.*)" url) 2)
+           :params (get addr 5)
            :trade trade
            :board board
            :forum forum
@@ -343,16 +343,18 @@
       (callback password))))
   
 (defn save-expanded [request]
-  (let [{:keys [target thread-id state]} request
-        settings (opts/get-for target)]
-    (when (:remember-expanded settings)
-      (cb-let [expanded] (io/get-data 'board 'expanded (:prefix target))
-        (let [expanded (when expanded (reader/read-string expanded))
-              to-save (condp = state
-                        :expand (conj (or expanded #{}) thread-id)
-                        :collapse (disj (or expanded #{}) thread-id)
-                        #{})]
-          (io/put-data 'board (:prefix target) {:expanded (pr-str to-save)}))))))
+  (js/setTimeout
+   #(let [{:keys [target thread-id state]} request
+          settings (opts/get-for target)]
+      (when (:remember-expanded settings)
+        (cb-let [expanded] (io/get-data 'board 'expanded (:prefix target))
+                (let [expanded (when expanded (reader/read-string expanded))
+                      to-save (condp = state
+                                :expand (conj (or expanded #{}) thread-id)
+                                :collapse (disj (or expanded #{}) thread-id)
+                                #{})]
+                  (io/put-data 'board (:prefix target) {:expanded (pr-str to-save)})))))
+   500))
 
 (defn get-frontend-html [_ callback]
   (callback (render/frontend)))

@@ -711,6 +711,8 @@
         (set! (.-textContent expand-btn) "Collapse")
         (set! (.-title expand-btn) "Collapse all threads"))
       (do
+        (when (and *target* (not (:chain *target*)))
+          (bk/save-expanded {:target *target* :state :clear}))
         (reset! *expand-counter* 0)
         (set! (.-textContent expand-btn) "Expand")
         (set! (.-title expand-btn) "Expand all threads")))
