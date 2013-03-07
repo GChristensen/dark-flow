@@ -284,8 +284,6 @@
 
 ;; tree scrapper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; (flat scrapper isn't implemented)
-
 (defmulti parse-threads trade-dispatch)
 
 (defmulti parse-post #(:trade %3))
@@ -359,6 +357,7 @@
   ([threads target]
      (parse-structured threads "table .reply" target)))
 
+;; flat scrapper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn parse-flat [doc-tree target]
   (let [elts (select* doc-tree "form#delform > input[type='checkbox'],
@@ -633,7 +632,8 @@
 (defmethod extract-navbar "dobrochan.ru" [dom target]
   (when-let [navbar-elt (select dom ".adminbar")]
     (transform-navbar dom target (seq (.-childNodes navbar-elt))
-                      #(re-matches #"/[a-zA-Z0-9-]+/index.xhtml" (.getAttribute % "href"))
+                      #(when-let [href (.getAttribute % "href")]
+                         (re-matches #"/[a-zA-Z0-9-]+/index.xhtml" href))
                       #(let [l (.getAttribute % "href")]
                          (set! (.-href %) (str io/*scheme* (:domain target) 
                                                (.substring l 0 (.lastIndexOf l "/"))))
