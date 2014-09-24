@@ -14,3 +14,6 @@ opts.addon = {}
 var payload = {};
 payload.id = {};
 payload.values = {};
+
+var href = {};
+href.endsWith = function () {};

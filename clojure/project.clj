@@ -10,7 +10,7 @@
   :cljsbuild {
     :builds [{:source-paths ["cljs"]
               :compiler 
-              {:output-to #_"../gae/war/frontend.js"  "d:/std/home/firefox/current/extensions/dark-flow-ag@jetpack/resources/dark-flow-aggregator/data/frontend.js"
+              {:output-to #_"../gae/war/frontend.js"  "d:/std/home/firefox/australis/extensions/dark-flow-ag@jetpack/resources/dark-flow-aggregator/data/frontend.js"
                :optimizations :whitespace
                :externs ["externs.js"]
                :pretty-print true

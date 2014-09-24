@@ -7,6 +7,7 @@
    [kuroi.io :as io]
    [kuroi.base :as base]
    [kuroi.filters :as filt]
+   [goog.style :as style]
    [clojure.string :as str])
   (:use-macros [kuroi.macros :only [cb-let a- a-> s-in? log]]))
 
@@ -48,7 +49,7 @@
 
 (def ^:dynamic *crossref-map* nil)
 
-(defn check-reflinks [post-id content target]
+(defn check-reflinks [post-id parent-id content target]
   (str/replace content #"<a[^>]+(href=[\"'][^'\"]+[\"'])[^>]*>&gt;&gt;(\d+)</a>"
                (fn [_ url reply-no]
                  (let [refs (when *crossref-map* (@*crossref-map* reply-no))]
@@ -57,9 +58,11 @@
                    (str "<a target=\"_blank\" "
                         (cond
                          (:fourchan target)
-                         (str/replace url #"href=\"(\d+)"
+                         (str/replace url #"href=\"([^\"]+)"
                                       (fn [_ rest]
-                                        (str "href=\"http://" (:forum target) "/res/" rest)))
+                                        (if (and parent-id (= "#" (get rest 0)))
+                                          (str "href=\"" (thread-url parent-id target) rest "\"")
+                                          (str "href=\"http://boards." (:trade target) rest))))
                          (:kraut target)
                          (str/replace url #"href=\""
                                       (str "href=\"http://" (:trade target)))
@@ -112,8 +115,9 @@
 (defmulti paginate trade-dispatch)
 
 (defmethod paginate "4chan.org" [n target]
-  (str (:scheme target) "boards.4chan.org/" (:board target) "/"
-       (when (not (zero? n)) n)))         
+  (let [n (+ 1 n)]
+    (str (:scheme target) "boards.4chan.org/" (:board target) "/"
+         (when (not (= 1 n)) n))))
 
 (defmethod paginate "iichan.hk" [n target]
   (str (:target target) "/"
@@ -190,7 +194,7 @@
 
 (defmethod get-summary-node :default [thread target]
   (select thread 
-          ".omittedposts, .omittedinfo, div.abbrev > span, span.summary"))
+          ".omittedposts, .omittedinfo, div.abbrev > span, span.summary, .mess-post"))
 
 (defn get-omitted-posts [thread target]
   (when-let [summary-node (get-summary-node thread target)]
@@ -221,7 +225,7 @@
             :thumb (when thumb-img (fix-url (.getAttribute thumb-img "src") target))
             :image (when image-link (fix-url (.getAttribute image-link "href") target))
             :image-size (if image-size [(get width-height 1) (get width-height 2)] [0 0])
-            :text (check-reflinks post-id post-text target)
+            :text (check-reflinks post-id (:parent-id data) post-text target)
             })))
 
 (defn build-image-data [thread-id thumb-img image-link image-size target]
@@ -305,6 +309,8 @@
         image-link (select root-node "a[href*='src/'], .threadimg img")
         filesize (select root-node ".filesize, .fileinfo")
         post-text (select root-node "blockquote, div.postbody > div.message")]
+;;;
+;;(.error console thread-id)
     (build-post-data data thread-id date-val title-elt thumb-img image-link 
                      filesize post-text target)))
 
@@ -403,9 +409,9 @@
         thumb-img (when image-link (select image-link "img"))
         filesize (select root-node ".fileText")
         post-text (select root-node ".post > blockquote")
-        flag-elt (select root-node ".countryFlag")
+        flag-elt (select root-node ".flag")
         flag (when flag-elt 
-              [(fix-url (.-src flag-elt) target)
+              [(.-value (.getAttributeNode flag-elt "class"))
                (.-title flag-elt)])]
     (assoc (build-post-data data thread-id date-val title-elt thumb-img 
                             image-link filesize post-text target)
@@ -420,7 +426,10 @@
   (let [thread-id (get-thread-id root-node target)
         flag-elt (select root-node ".postheader > img[src*='ball']")
         flag (when flag-elt [(fix-url (.-src flag-elt) target)
-                             (get (re-find #"'([^']+)'" (.-onmouseover flag-elt)) 1)])
+                             (get (re-find #"'([^']+)'" 
+                                           (.-value (.getAttributeNode flag-elt
+                                                                       "onmouseover")))
+                                  1)])
         title-elt (select root-node ".postheader > span.postsubject")
         date-elt (select root-node ".postdate")
         date (str/replace (.-textContent date-elt) #".\d+$" "")
@@ -474,6 +483,11 @@
   (parse-structured (select* doc-tree "form > div.threadz")
                     "table .reply"
                     target))
+
+(defmethod parse-threads "2ch.hk" [doc-tree target]
+  (parse-structured (select* doc-tree ".thread")
+                    ".reply"
+                    target))
                      
 ;; image scrappers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -485,7 +499,7 @@
 ;;       (make-image-headline nil (first (select filesz [:img])) (first (select filesz [:a])) filesz target))))
   
 (defmethod parse-thread-images :default [doc-tree target]
-  (let [images (select* doc-tree ".filesize, .fileinfo, .fileInfo, img[src*='thumb/']")]
+  (let [images (select* doc-tree ".filesize, .fileText, .fileinfo, a.fileThumb > img, .fileInfo, img[src*='thumb/']")]
         (for [[filesz thumb] (partition 2 images)]
           (build-image-data nil thumb (.-parentNode thumb) filesz target))))
 
@@ -494,7 +508,7 @@
     (apply concat
            (for [root-node threads]
              (let [thread-id (get-thread-id root-node target)
-                   images (select* root-node ".filesize, .fileinfo, .fileInfo, img[src*='thumb/']")]
+                   images (select* root-node ".filesize, .fileText, a.fileThumb > img, .fileinfo, .fileInfo, img[src*='thumb/']")]
                (for [[filesz thumb] (partition 2 images)]
                  (let [link (.-parentNode thumb)]
                    (build-image-data thread-id thumb link filesz target))))))))
@@ -533,7 +547,7 @@
     (if (select doc-tree "form > blockquote")
       (parse-images-flat doc-tree target)
       (parse-images-struct doc-tree ".board > .thread,
-                                  form#delform > div[id^='thread'],
+                                  form > div[id^='thread'],
                                   body > form > div[id^='thread']"
                            target))))
 
@@ -547,47 +561,49 @@
 (defmulti get-post-form trade-dispatch)
 
 (defmethod get-post-form :default [dom target]
-  (select dom "form#postform, form[name='post'], #posting_form"))
+  (select dom "form#postform, .postform, form[name='post'], #posting_form"))
 
 ;; navbar
 
 (defmulti extract-navbar trade-dispatch)
 
 (defn transform-navbar [dom target nodes link-p link-f]
-  (loop [nodes nodes out []]
-    (if-let [node (first nodes)]
-      (cond (and (= (.-tagName node) "A") (link-p node))
-            (let [link (link-f node)]
-              (a-> href link (str (.getAttribute link "href") (:params target)))
-              (recur (next nodes) (conj out link)))
+    (loop [nodes nodes out []]
+      (if-let [node (first nodes)]
+        (cond
+         (and (= (.-tagName node) "A") (link-p node))
+         (let [link (link-f node)]
+           (a-> href link (str (.getAttribute link "href") (:params target)))
+           (recur (next nodes) (conj out link)))
 
-            (and (= (.-nodeType node) 3)
-                 (re-find #"[\[\]|/]" (.-textContent node)))
-            (let [chars (filter #(and (not (str/blank? %)) (s-in? "[]|/" %))
-                                (filter #(not (re-matches #"\s" %)) (.-textContent node)))]
-              (recur (next nodes) (conj out (map #(.createTextNode dom %) chars))))
+         (and (= (.-nodeType node) 3)
+              (re-find #"[\[\]|/]" (.-textContent node)))
+         (let [chars (filter #(and (not (str/blank? %)) (s-in? "[]|/" %))
+                             (filter #(not (re-matches #"\s" %)) (.-textContent node)))]
+           (recur (next nodes) (conj out (map #(.createTextNode dom %) chars))))
 
-            :else (recur (next nodes) out))
-      (let [ctr (atom 0)
-            nodes (partition-by #(let [c @ctr]
-                                   (when (= (.-textContent %) "]") (swap! ctr inc))
-                                    c)
-                                (flatten out))
-            nodes (flatten (filter #(and (> (count %) 2) 
-                                         (some (fn [n] (= (.-tagName n) "A")) %))
-                                   nodes))
-            spaces (repeatedly (count nodes) #(.createTextNode dom "  "))
-            div (.createElement dom "div")]
-        (doseq [n (interleave spaces nodes)]
-          (.appendChild div n))
-        div))))
+         :else (recur (next nodes) out))
+        (let [ctr (atom 0)
+              nodes (partition-by #(let [c @ctr]
+                                     (when (= (.-textContent %) "]") (swap! ctr inc))
+                                     c)
+                                  (flatten out))
+              nodes (flatten (filter #(and (> (count %) 2) 
+                                           (some (fn [n] (= (.-tagName n) "A")) %))
+                                     nodes))
+              spaces (repeatedly (count nodes) #(.createTextNode dom "  "))
+              div (.createElement dom "div")]
+          (doseq [n (interleave spaces nodes)]
+            (.appendChild div n))
+          div))))
 
 (defmethod extract-navbar "4chan.org" [dom target]
-  (let [navbar-elt (select dom "#boardNavDesktop")]
+  (let [navbar-elt (select dom "#boardNavDesktop > .boardList")]
     (transform-navbar dom target (seq (.-childNodes navbar-elt))
-                      #(re-matches #".*\.org/..*" (.getAttribute % "href"))
+                      ;#(re-matches #".*\.org/..*" (.getAttribute % "href"))
+                      #(re-matches #"/[^/]+/" (.getAttribute % "href"))
                       #(do
-                         (a-> href % (str/replace (.getAttribute % "href") "//boards." io/*scheme*))
+                         (a-> href % (str io/*scheme* (:trade target) (.getAttribute % "href") ))
                          %))))
 
 (defmethod extract-navbar "iichan.hk" [dom target]
@@ -622,7 +638,7 @@
   (extract-navbar-menu dom "#overlay_menu div[id^='menu']" target))
 
 (defmethod extract-navbar "2ch.hk" [dom target]
-  (extract-navbar-menu dom "#boardNav > .nowrap" target))
+  (extract-navbar-menu dom "nav.rmenu > span" target))
 
 (defmethod extract-navbar "ichan.org" [dom target]
   (doseq [a (select* dom "#leftmenudiv a")]
@@ -740,8 +756,11 @@
 
 (defmethod get-post-error "7chan.org" [response target])
 
-(defmethod get-post-error "2ch.hk" [response target] 
-  (find-post-error "center > strong" response target))
+(defmethod get-post-error "2ch.hk" [response target]
+  (let [json (JSON/parse (:text response))]
+    (when-let [err (aget json "Error")]
+      (when (not (nil? err))
+        (aget json "Reason")))))
 
 (defmethod get-post-error "dobrochan.ru" [response target] 
   (find-post-error ".post-error" response target))
@@ -759,7 +778,11 @@
 (defmethod adjust-form "4chan.org" [form target]
   (set! (.-__parent_key__ form) "resto")
   (set! (.-__captcha_challenge__ form) "recaptcha_challenge_field")
-  (let [captcha-line (select form "#captchaFormPart")]
+  (let [captcha-line (select form "#captchaFormPart")
+        toggle-node (select form "#togglePostFormLink")
+        blotter (select form "#blotter")]
+    (when toggle-node (set! (.-display (.-style toggle-node)) "none"))
+    (when blotter (set! (.-display (.-style blotter)) "none"))
     (set! (.-innerHTML captcha-line) "<td class=\"desktop\">Verification</td>
                                       <td>
                                         <img/><br/>
@@ -780,9 +803,31 @@
 
 (defmethod adjust-form "2ch.hk" [form target]
   (set! (.-__captcha_challenge__ form) "captcha")
-  (let [captcha-line (select form "#captcha_div")]
+  (set! (.-action form) (str (.-action form) "?json=1"))
+  (set! (.-action form) (str/replace (.-action form) "http:" "https:"))
+  (let [captcha-line (select form "div.captcha-box")
+        text-area (select form "#shampoo")
+        submit (select form "#submit")
+        message-byte-len (select form ".message-byte-len")
+        send-mob (select form ".send-mob")
+        qr-image2 (select form "#image2")
+        qr-image3 (select form "#image3")
+        qr-image4 (select form "#image4")
+        hr (select form "hr")
+        buy-pass (select form ".kupi-passcode-suka")]
+    (set! (.-cssFloat (.-style submit)) "right")
+    (when buy-pass (set! (.-display (.-style buy-pass)) "none"))
+    (set! (.-__parent_key__ form) "thread")
+    (set! (.-display (.-style message-byte-len)) "none")
+    (when hr (set! (.-display (.-style hr)) "none"))
+    (when send-mob (set! (.-display (.-style send-mob)) "none"))
+    (when buy-pass (set! (.-display (.-style buy-pass)) "none"))
+    (when qr-image2 (set! (.-display (.-style qr-image2)) "none"))
+    (when qr-image3 (set! (.-display (.-style qr-image3)) "none"))
+    (when qr-image4 (set! (.-display (.-style qr-image4)) "none"))
+    (set! (.-width (.-style text-area)) "500px")
     (set! (.-innerHTML captcha-line) "<img/><br/>
-                                      <input type=\"text\" name=\"captcha_value\"
+                                      <input type=\"text\" name=\"captcha_value_id_06\"
                                              autocomplete=\"off\">"))
   form)
 

@@ -8,9 +8,9 @@ Dark Flow is a complete client-side port of the
 web-application, which includes all feautres of the former except the archive 
 functionality.
 
-Currently Dark Flow could run as:
-* A Firefox addon ([on github](https://github.com/GChristensen/dark-flow/blob/master/firefox/dark-flow-aggregator.xpi?raw=true))
-* A web-application in a servlet container (including GAE). The web-app uses IndexedDB to 
+
+* Firefox addon 
+* web-application in a servlet container (including GAE). The web-app uses IndexedDB to 
   store data on a client, this narrows its compatibility to Firefox and Chrome browsers
   (including Android versions).
 

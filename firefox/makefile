@@ -5,7 +5,7 @@ all:
 	cd ../clojure; lein with-profile production cljsbuild once
 	cp ../clojure/frontend.js ./data/frontend.js
 	cp -r ../themes ./data
-	activate; cd "$(CURDIR)"; cfx xpi
+	activate.bat; cd "$(CURDIR)"; cfx xpi --force-mobile
 
 clean:
 	rm ./dark-flow-aggregator.xpi

@@ -4,12 +4,15 @@
     "icon": "data/icon.png", 
     "icon64": "data/icon64.png", 
     "license": "BSD", 
-    "version": "0.1.5", 
+    "version": "0.1.6", 
     "dependencies": [
        "api-utils"
        ,"addon-kit"
     ],
     "fullName": "Dark Flow Aggregator", 
     "id": "dark-flow-ag", 
-    "description": "An advanced imageboard aggregator"
+    "description": "An advanced imageboard aggregator",
+    "permissions": {
+      "unsafe-content-script": true
+    }
    }

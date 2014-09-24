@@ -104,10 +104,17 @@
     ((mk/clone-for [rep replies]
                 [:.reply-header]
                 (em/remove-attr :style)
-                [:.flag]
+                [:img.flag]
                 (mk/do-when (:flag rep)
                    (em/do->
-                     (em/set-attr :src (first (:flag rep)))
+                     (em/set-attr :class (if (:fourchan target) 
+                                           (first (:flag rep)) 
+                                           "flag")) 
+                     ;(em/set-attr :src (first (:flag rep)))
+                     (fn [node]
+                       (if (not (:fourchan target))
+                         ((em/set-attr :src (first (:flag rep))) node)
+                         node))
                      (em/set-attr :title (second (:flag rep)))))
                 [:.reply-no]
                 (em/do->
@@ -263,7 +270,14 @@
                 [:.flag]
                 (mk/do-when (:flag th)
                          (em/do->
-                          (em/set-attr :src (first (:flag th)))
+                          (em/set-attr :class (if (:fourchan target) 
+                                                (first (:flag th)) 
+                                                "flag")) 
+                          ;(em/set-attr :src (first (:flag th)))
+                          (fn [node]
+                            (if (not (:fourchan target))
+                              ((em/set-attr :src (first (:flag th))) node)
+                              node))
                           (em/set-attr :title (second (:flag th)))))
                 [:.thread-no]
                 (em/do->

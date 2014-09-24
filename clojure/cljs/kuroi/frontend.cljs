@@ -143,14 +143,14 @@
   (load-external (str *file-base* "themes/" theme "/css/" filename) "css"))
  
 (defn load-styles [theme &{:keys [settings]}]
-    (load-css theme "main.css")
-    (load-css theme "closure.css")
-    (let [ua (str/lower-case (.-userAgent js/navigator))]
-      (if (or (s-in? ua "android") (s-in? ua "mobile"))
-        (load-css theme "mobile.css")))
-    (if settings
-      (load-css theme "settings.css")
-      (load-css theme "frontend.css")))
+  (load-css theme "main.css")
+  (load-css theme "closure.css")
+  (let [ua (str/lower-case (.-userAgent js/navigator))]
+    (if (or (s-in? ua "android") (s-in? ua "mobile"))
+      (load-css theme "mobile.css")))
+  (if settings
+    (load-css theme "settings.css")
+    (load-css theme "frontend.css")))
 
 (defn format-stats [stats target]  
   (let [shown (if (:img target) (:shown stats) (+ (:shown stats) (:watch stats)))
@@ -287,11 +287,18 @@
     (set-events el
                 {"mousedown"
                  (fn [e]
-                   (.preventDefault e)
-                   (set! (.-curX el) (- (.-clientX e) (js/parseInt (.-left (.-style el)))))
-                   (set! (.-curY el) (- (.-clientY e) (js/parseInt (.-top (.-style el)))))
-                   (set-events (.-body js/document)
-                               {"mousemove" move-elt "mouseup" stop-elt}))})))
+                   (let [left (js/parseInt (.-left (.-style el)))
+                         top (js/parseInt (.-top (.-style el)))
+                         ;client-top (.-clientTop el)
+                         ;width (.-clientWidth el)
+                         ;height (.-clientHeight el)
+                         client-x (.-clientX e)
+                         client-y (.-clientY e)]
+                     (.preventDefault e)
+                     (set! (.-curX el) (- client-x left))
+                     (set! (.-curY el) (- client-y top))
+                     (set-events (.-body js/document)
+                                 {"mousemove" move-elt "mouseup" stop-elt})))})))
 
 (defn resize-image [e]
   (.preventDefault e)
@@ -319,7 +326,8 @@
           src (when img (.-src img))]
       (when src 
         (show-thread-video src)))
-    (let [full (.-singleNodeValue (.evaluate js/document ".//img[@id=\"_fullimg\"]" a nil 8 nil))]
+    (let [full (.-singleNodeValue (.evaluate js/document ".//*[@id=\"_fullimg\"]" a nil 8 nil))
+          video? (.endsWith (.-href a) ".webm")]
       (if full ; shown
         (if (not (.-moved full))
           (do
@@ -327,8 +335,8 @@
                   (if (= (.-display (.-style full)) "none") "" "none"))
             (js/setTimeout #(.removeChild (.-parentNode full) full) 0))
           (set! (.-moved full) false))
-                                        ; none
-        (let [full (.createElement js/document "img")
+         ; none
+        (let [full (.createElement js/document (if video? "video" "img"))
               existing (dom/getElement "_fullimg")
               scr-w (.-clientWidth (.-body js/document))
               scr-h (.-innerHeight js/window)
@@ -339,6 +347,9 @@
                               [full-w full-h])]
           (when existing
             (.removeChild (.-parentNode existing) existing))
+          (when video? 
+            (set! (.-controls full) true)
+            (set! (.-autoplay full) true))
           (.addEventListener full "DOMMouseScroll" resize-image) ; Chrome: 'mousewheel'
           (make-moveable full)
           (set-attrs full
@@ -675,6 +686,8 @@
       (start-chain url pages)
       (do     
         (set! *target* (bk/make-target (js/decodeURI url)))
+        (when (:fourchan *target*)
+          (load-css *theme* "flags-4chan.css"))
         (if *target*
           (let [target (assoc *target* :subsequent subsequent)] 
             (load-external (str "http://" (:trade target) "/favicon.ico") "ico")
@@ -858,14 +871,18 @@
             (set! (.-className post-no) "thread-no form-reply-no")
 
             ;; when replying to a thread, add the thread id to the form
-            (let [parent-elt (.querySelector form-clone (str "input[name='" parent-key "']"))]
+            (let [parent-elt (.querySelector form-clone (str "input[name='" parent-key "']"))
+;                  usercode-elt (.querySelector form-clone ".qr-usercode-input")
+                  new-parent (create-elt "input" 
+                                          {"type" "hidden"
+                                           "name" parent-key 
+                                           "value" thread-id})]
               (when parent-elt
                 (.removeChild (.-parentNode parent-elt) parent-elt))
-              (.appendChild form-clone
-                            (create-elt "input" 
-                                        {"type" "hidden"
-                                         "name" parent-key 
-                                         "value" thread-id})))
+
+              ;(if usercode-elt
+              ;  (.insertBefore form-clone new-parent usercode-elt)
+                (.appendChild form-clone new-parent));)
 
             (let [post-text (str ">>" post-id "\n\n")
                   selection (.toString (.getSelection js/window))]
@@ -980,14 +997,14 @@
   (with-page settings [settings]
     (let [wf-lbl (goog.ui.Tooltip. "wf-label")]
       (.setHtml wf-lbl "Place each wordfilter entry on a single line.<br/>
-                     A regexp should be prefixed with the '#' character,
+                     A regexp should be prefixed with the hash character ('#'),
                      for example: <span class=\"gold\">#\\bpony\\b</span>."))
 
     (let [fav-lbl (goog.ui.Tooltip. "fav-lbl")]
       (.setHtml fav-lbl "Default parameters for a board on a single line,
                      for example: <span class=\"gold\">4chan.org/c:10p:3r:img</span>.<br/>
                      When loading the board it's possible to disable a switch specified here
-                     by adding <br/>a exclamation mark in front of it, for example: 
+                     by adding <br/>an exclamation mark in front of it, for example: 
                      <span class=\"gold\">4chan.org/c:5p:!img<span class=\"gold\">."))
 
     (let [uri (goog.Uri. (.-href (.-location js/document)))
