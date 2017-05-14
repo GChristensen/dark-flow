@@ -3,6 +3,8 @@ Dark Flow
 
 An advanced imageboard aggregator.
 
+[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/fbLqfsB5PAs/0.jpg)](https://www.youtube.com/watch?v=fbLqfsB5PAs)
+
 Dark Flow is a complete client-side port of the 
 [Dark Matter](https://github.com/GChristensen/dm-browser#readme) 
 web-application, which includes all feautres of the former except the archive 
@@ -13,6 +15,3 @@ Could be run as:
 * web-application in a servlet container (including GAE).
 
 See the [manual](https://raw.github.com/GChristensen/dark-flow/master/manual.png) or [video](https://youtu.be/fbLqfsB5PAs) for more information.
-
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/fbLqfsB5PAs" frameborder="0" allowfullscreen></iframe>
