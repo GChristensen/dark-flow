@@ -5,6 +5,21 @@
       body, html {background-color: #181818;} #content {display: none;}
     </style>
     <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/>
+    <script>
+      window.addEventListener('message', function(event) {
+          if (event.data.msg == "dark-flow:load-init-script")
+          {
+            let script = document.createElement("script");
+
+            script.type = "text/javascript";
+            script.src = event.data.file_base + "init_page.js";
+            document.head.appendChild(script);
+          }
+          else
+            global_dispatch_msg(event.data);
+      },
+      false);
+    </script>
     <!--meta http-equiv="Access-Control-Allow-Origin" content="*"/-->
     <!--ssi_content-->
   </head>

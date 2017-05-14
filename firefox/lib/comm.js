@@ -36,10 +36,11 @@ function get_pages(cons_xhr, port, prefix, data)
                  var req = cons_xhr();
                  req.onload = function() 
                  {
-                     if (this.status == 200)
+                     if (this.status < 400)
                          responses[n] = {error: "success", 
                                          url: data.payload[n],
                                          text: this.responseText,
+                                         cookie: this.getResponseHeader("Set-Cookie"),
                                          index: n};
                      else
                          responses[n] = {error: "http_error", 
@@ -83,6 +84,9 @@ function build_multipart_body(o)
     {
         var item = o[k];
         if (Array.isArray(item)) item = item[0];
+
+//if (typeof(item) == 'string')
+//  console.error(k + ": " + item);
 
         if (typeof(item) == 'string')
             body += '--' + boundary
@@ -129,9 +133,14 @@ function post_form(cons_xhr, port, prefix, data)
         req.timeout = data.payload.timeout;
     if (data.payload.referer)
         req.setRequestHeader("Referer", data.payload.referer);
-    req.setRequestHeader("Content-Type", "multipart/form-data; boundary=" + multipart.boundary);
 
-    req.sendAsBinary(multipart.body);
+    var bytes = [];
+
+    for (var i = 0; i < multipart.body.length; ++i) 
+        bytes.push(multipart.body.charCodeAt(i));
+        
+    req.setRequestHeader("Content-Type", "multipart/form-data; boundary=" + multipart.boundary);
+    req.send(Uint8Array.from(bytes));
 }
 
 exports.get_pages = get_pages;

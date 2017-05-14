@@ -5,7 +5,7 @@
 (ns kuroi.base
   (:require [kuroi.io :as io]))
    
-(def *posting-not-impl* #{"ichan.org" "7chan.org" "5channel.net" "0chan.hk"})
+(def *posting-not-impl* #{"ichan.org" "7chan.org"})
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (def *iichan-hk-wf*

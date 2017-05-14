@@ -2,24 +2,22 @@
 // 
 // (C) 2013 g/christensen (gchristnsn@gmail.com)
 
-var {Cc, Ci, Cu, Cr} = require("chrome");
-var {Class} = require('sdk/core/heritage');
-var {Unknown, Factory} = require('sdk/platform/xpcom');
-var {XPCOMUtils} = Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+const {processes, remoteRequire} = require("sdk/remote/parent");
+const {XMLHttpRequest} = require("sdk/net/xhr");
 
+var privateBrowsing = require("sdk/private-browsing");
+var {protocol, theme, db_file} = require("./consts");
+var events = require("sdk/system/events");
 var pageMod = require("sdk/page-mod");
-//var cm = require("sdk/context-menu");
 var data = require("sdk/self").data;
-var db = require("persist");
-var comm = require("comm");
-
-var theme = "dark";
-
-var data_version = "3";
+var db = require("./persist");
+var comm = require("./comm");
 
 // db initialization ///////////////////////////////////////////////////////////
 
-db.init("dark-flow-data.sqlite", 
+var data_version = "3";
+
+db.init(db_file, 
    function (conn) 
    {
        conn.executeSimpleSQL("CREATE TABLE board(id text primary key, last_id text);");
@@ -46,46 +44,6 @@ db.get("settings", "content", {where: "id", eq: "data_version"},
       }
   });
 
-
-// protocol handler ////////////////////////////////////////////////////////////
-
-var protocol = "chan";
-
-const nsIProtocolHandler = Ci.nsIProtocolHandler;
-const contractId = "@mozilla.org/network/protocol;1?name=" + protocol;
-
-var Chan2Protocol = Class({
-    extends: Unknown,
-    interfaces: [ 'nsIProtocolHandler' ],
-    scheme: protocol,
-    protocolFlags: nsIProtocolHandler.URI_NOAUTH |
-        nsIProtocolHandler.URI_LOADABLE_BY_ANYONE,
-    get wrappedJSObject() this,
-
-    newURI: function(aSpec, aOriginCharset, aBaseURI)
-    {
-        var uri = Cc["@mozilla.org/network/simple-uri;1"].createInstance(Ci.nsIURI);
-        uri.spec = aSpec;
-        return uri;
-    },
-
-    newChannel: function(aURI)
-    {
-        var ios = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
-        var uri = null;
-        // bootstrapping is necessary to free the main code from the resource urls
-        uri = ios.newURI(data.url("themes/" + theme + "/bootstrap.html"), null, null);
-        var channel = ios.newChannelFromURI(uri, null).QueryInterface(Ci.nsIChannel);
-
-        return channel;
-    } 
-});
-
-var factory = Factory({
-    contract: contractId,
-    Component: Chan2Protocol
-});
-
 db.get("settings", "content", {where: "id", eq: "theme"},
   function(value)
   {   
@@ -95,18 +53,22 @@ db.get("settings", "content", {where: "id", eq: "theme"},
           theme = value;
 
   });
+
+events.on("last-pb-context-exited", function (event) {db.purge_in_memory_db();});
+
+// protocol handler ////////////////////////////////////////////////////////////
+
+remoteRequire("./protocol", module);
   
 // xhr /////////////////////////////////////////////////////////////////////////
 
 function create_request()
 {
-    return Cc["@mozilla.org/xmlextras/xmlhttprequest;1"]
-        .createInstance(Ci.nsIJSXMLHttpRequest);
+    return new XMLHttpRequest(); 
 }
 
 // mini SSI-like features //////////////////////////////////////////////////////
 
-//var pages = {};
 var bootstrap_script = null;
 
 function bootstrap_js(entry_point)
@@ -115,26 +77,12 @@ function bootstrap_js(entry_point)
     {
         let req = create_request();
         req.open("get", data.url("bootstrap.js"), false);
-        req.responseType = "text";
         req.send();
         bootstrap_script = req.responseText;
     }
-
     return bootstrap_script.replace("$entry_point", entry_point);
 }
  
-// context menu ////////////////////////////////////////////////////////////////
-
-// "Menu Editor" extension somehow prevents SDK's context-menu module to work 
-
-// cm.Item({
-//   label: "Post to imageboard",
-//   context: cm.SelectorContext("img"),
-//   contentScript: 'self.on("click", function (node, data) {' +
-//                  ' alert("");' +
-//                  '});'
-// });
-
 // io.cljs message handling ////////////////////////////////////////////////////
 
 function process_messages(worker) 
@@ -158,7 +106,7 @@ function process_messages(worker)
 
     worker.port.on("put-data", function(data)
     {
-        db.put(data.table, data.id, data.values);
+        db.put(data.table, data.id, data.values, privateBrowsing.isPrivate(worker));
     });
 
     worker.port.on("get-data", function(data)
@@ -167,12 +115,13 @@ function process_messages(worker)
          function (result)
          {
              worker.port.emit(data.message, result);
-         });
+         },
+         privateBrowsing.isPrivate(worker));
     });
 
     worker.port.on("del-data", function(data)
     {
-       db.del(data.table, data.id);
+       db.del(data.table, data.id, privateBrowsing.isPrivate(worker));
     });
 
     worker.port.on("wipe-data", function(data)
@@ -188,7 +137,7 @@ function process_messages(worker)
               if (value)
               {
                   theme = value;
-                  pages = {};
+                  processes.port.emit("ui-theme-changed", theme);
               }
               worker.tab.reload();
           });

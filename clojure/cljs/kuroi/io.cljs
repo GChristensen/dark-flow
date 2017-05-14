@@ -29,7 +29,7 @@
 
 (defn clj-map
   [jsmap]
-  (let [keys (seq (.keys js/Object jsmap))]
+  (let [keys (array-seq (.keys js/Object jsmap))]
     (loop [keys keys out {}]
       (if-let [k (first keys)]
         (recur (rest keys) (assoc out (keyword k) (aget jsmap k)))
@@ -54,7 +54,7 @@
       (request "get-pages" input
         (fn [result]
           (let [result (clj-map result)]
-            (callback (assoc result :pages (map clj-map (seq (:pages result))))))))
+            (callback (assoc result :pages (map clj-map (array-seq (:pages result))))))))
       (callback nil))))
 
 (defn get-page [url callback]
@@ -90,7 +90,7 @@
     (.once *port* msg-id 
       (fn [rows]
         (if rows
-          (callback (seq rows))
+          (callback (array-seq rows))
           (callback nil))))
     (.emit *port* "get-data" pack)))
 

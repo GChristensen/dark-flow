@@ -42,6 +42,11 @@
 (defn clear-watch []
   (io/wipe-data 'watch))
 
+(defn clear-data []
+  (io/wipe-data 'board)
+  (io/wipe-data 'watch)
+  (io/wipe-data 'forgotten))
+
 (defn parse-wordfilter [words]
   (when words
     (doall

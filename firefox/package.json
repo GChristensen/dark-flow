@@ -1,18 +1,25 @@
 {
-    "name": "dark-flow-aggregator",
-    "author": "thenewkinetic",
-    "icon": "data/icon.png", 
-    "icon64": "data/icon64.png", 
-    "license": "BSD", 
-    "version": "0.1.6", 
-    "dependencies": [
-       "api-utils"
-       ,"addon-kit"
-    ],
-    "fullName": "Dark Flow Aggregator", 
-    "id": "dark-flow-ag", 
-    "description": "An advanced imageboard aggregator",
-    "permissions": {
-      "unsafe-content-script": true
-    }
-   }
+  "title": "Dark Flow Imageboard Browser",
+  "name": "dark-flow-imageboard-browser",
+  "version": "1.0.3",
+  "description": "An advanced imageboard browser",
+  "main": "./lib/main.js",
+  "author": "Team Fishdryer",
+  "engines": {
+    "firefox": ">=38.0a1",
+    "fennec": ">=38.0a1"
+  },
+  "icon": { 
+    "16": "resource://@dark-flow-imageboard-browser/data/icon16.png", 
+    "32": "resource://@dark-flow-imageboard-browser/data/icon32.png", 
+    "64": "resource://@dark-flow-imageboard-browser/data/icon64.png" },
+  "license": "MIT",
+  "keywords": [
+    "jetpack"
+  ],
+  "permissions": {
+     "multiprocess": true,
+     "private-browsing": true
+  }
+
+}

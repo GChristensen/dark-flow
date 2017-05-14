@@ -194,7 +194,7 @@
         (cb-let? (:new target) [seen-threads-str] (io/get-data 'board 'seen (:prefix target))
           (cb-let? (:remember-expanded settings) [expanded-threads-str] 
                    (io/get-data 'board 'expanded (:prefix target))
-          (let [forgotten-threads (set (seq (JSON/parse forgotten-threads-str)))
+          (let [forgotten-threads (set (seq (.parse js/JSON forgotten-threads-str)))
                 threads-on-watch (when (and (seq watch-thread-strs) (not (:filter target)))
                                    (into {} (map (fn [w] [(:internal-id w) w])
                                                  (map reader/read-string watch-thread-strs))))

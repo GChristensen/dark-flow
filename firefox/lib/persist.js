@@ -4,12 +4,15 @@
 
 const {Cc, Ci} = require("chrome");
 
-const fileDirectoryService = Cc["@mozilla.org/file/directory_service;1"].
-                            getService(Ci.nsIProperties).
-                            get("ProfD",Ci.nsIFile);
+const fileDirectoryService = Cc["@mozilla.org/file/directory_service;1"]
+                              .getService(Ci.nsIProperties)
+                                .get("ProfD", Ci.nsIFile);
 
-const storageService = Cc["@mozilla.org/storage/service;1"].
-                        getService(Ci.mozIStorageService);
+const storageService = Cc["@mozilla.org/storage/service;1"]
+                        .getService(Ci.mozIStorageService);
+
+// may sometimes fail on async requests
+var in_memory_db = {};
 
 var db_file;
 var conn;
@@ -73,8 +76,17 @@ function v_join(values, id)
     return r + "'" + q_esc(id) + "'";
 }
 
-exports.put = function (table, id, values) 
+exports.put = function (table, id, values, in_memory) 
 {
+    if (in_memory)
+    {
+        let table_id = "tbl_id_" + table;
+        if (!in_memory_db[table_id]) { in_memory_db[table_id] = {}; }
+        values["id"] = id;
+        in_memory_db[table_id]["row_id_" + id] = values;
+        return;
+    }
+
     var connection = open_db();
     let exists_st = connection.createStatement
     (
@@ -97,8 +109,27 @@ exports.put = function (table, id, values)
     set_st.execute();   
 }
 
-exports.get = function (table, field, id, success) 
+exports.get = function (table, field, id, success, in_memory) 
 {
+    if (in_memory && table != "settings")
+    {
+        var in_memory_data = Array();
+        let tbl = in_memory_db["tbl_id_" + table];        
+        if (tbl)
+        {
+            for (let r in tbl)  
+            { 
+                let row = tbl[r]; 
+                if (row && (id == null || row[id.where] == id.eq))
+                    in_memory_data.push(row[field]); 
+            }
+            success(in_memory_data.length > 0? in_memory_data: null);
+        }
+        else
+            success(null);
+        return;
+    }
+
     var connection = open_db();
     let statement = connection.createStatement
     (
@@ -112,7 +143,7 @@ exports.get = function (table, field, id, success)
 
     statement.executeAsync({
         handleResult: function(aResultSet) {
-            var result = [];
+            var result = Array();
             for (let row = aResultSet.getNextRow();
                  row;
                  row = aResultSet.getNextRow()) {
@@ -134,8 +165,16 @@ exports.get = function (table, field, id, success)
     });
 }
 
-exports.del = function (table, id) 
+exports.del = function (table, id, in_memory) 
 {
+    if (in_memory)
+    {
+        let tbl = in_memory_db["tbl_id_" + table];
+        if (tbl)
+            for (let r in tbl)  { if (r == id) delete tbl[r]; return; }
+        return;
+    }
+
     var connection = open_db();
     let statement = connection.createStatement
     (
@@ -152,12 +191,17 @@ exports.wipe = function (table)
     connection.executeSimpleSQL("delete from " + table);
 }
 
-exports.close = function (table) 
+exports.close = function () 
 {
     if (conn)
     {
         conn.asyncClose();
         conn = null;
     }
+}
+
+exports.purge_in_memory_db = function () 
+{
+    in_memory_db = {};
 }
 

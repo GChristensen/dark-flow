@@ -15,17 +15,26 @@
 
 ;; utilities ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(def ^:const json-sources #{"2ch.hk" "4chan.org"})
+
 (def ^:const alt-exts {"dobrochan.ru" "xhtml", "2--ch.ru" "memhtml"})
 
 (defn trade-dispatch [_ target] (:trade target))
 
+(defmulti thread-url trade-dispatch)
+
+(defn json? [target]
+  (json-sources (:trade target)))
+
 (defn get-ext [target]
-  (or (alt-exts (:trade target)) "html"))
+  (if (json? target)
+    "json"
+    (or (alt-exts (:trade target)) "html")))
 
 (defn sanitize [content]
   (when content
     (str/replace content #"<([^ ]+)[^>]*onload[^>]*>"
-                 (fn [_ & match] (str "<" (first match) ">")))))
+                 (fn [[_ & match]] (str "<" (first match) ">")))))
 
 (def *host* (.-host (.-location js/document)))
 (def *host-pattern* (re-pattern (str "https?://" *host* ".*")))
@@ -50,8 +59,8 @@
 (def ^:dynamic *crossref-map* nil)
 
 (defn check-reflinks [post-id parent-id content target]
-  (str/replace content #"<a[^>]+(href=[\"'][^'\"]+[\"'])[^>]*>&gt;&gt;(\d+)</a>"
-               (fn [_ url reply-no]
+  (str/replace content #"<a[^>]+(href=[\"'][^'\"]+[\"'])[^>]*>((&gt;&gt;)|(>>))(\d+)([^<]*)</a>"
+               (fn [[_ url _ _ _ reply-no other]]
                  (let [refs (when *crossref-map* (@*crossref-map* reply-no))]
                    (when *crossref-map*
                      (swap! *crossref-map* assoc reply-no (conj refs post-id)))
@@ -59,9 +68,10 @@
                         (cond
                          (:fourchan target)
                          (str/replace url #"href=\"([^\"]+)"
-                                      (fn [_ rest]
+                                      (fn [[_ rest]]
                                         (if (and parent-id (= "#" (get rest 0)))
-                                          (str "href=\"" (thread-url parent-id target) rest "\"")
+                                          (str "href=\"http://boards." (:trade target) "/"
+                                               (:board target) "/thread/" parent-id rest "\"")
                                           (str "href=\"http://boards." (:trade target) rest))))
                          (:kraut target)
                          (str/replace url #"href=\""
@@ -71,11 +81,11 @@
                         "onclick=\"return frontend.inline_view_reflink(this)\" "
                         "onmouseover=\"frontend.show_popup(event, '" reply-no  "', true)\" "
                         "onmouseout=\"frontend.show_popup(event, '" reply-no "', false)\""
-                        ">&gt;&gt;" reply-no "</a>")))))
+                        ">&gt;&gt;" reply-no other  "</a>")))))
 
 (defn fix-links [content target]
   (str/replace content (re-pattern (str "href=[\"'](/?(?:" (:board target) ")?/?res/[^\"']+)[\"']"))
-               (fn [_ match]
+               (fn [[_ match]]
                  (str "href=\"" (fix-url match target) "\" target=\"_blank\""))))
 
 (defn select [node sel]
@@ -115,15 +125,19 @@
 (defmulti paginate trade-dispatch)
 
 (defmethod paginate "4chan.org" [n target]
-  (let [n (+ 1 n)]
-    (str (:scheme target) "boards.4chan.org/" (:board target) "/"
-         (when (not (= 1 n)) n))))
+  (str "https://a.4cdn.org/" (:board target) "/" (inc n) ".json"))
 
 (defmethod paginate "iichan.hk" [n target]
   (str (:target target) "/"
        (if (zero? n)
          (str "index." (get-ext target))
          (str n "." (get-ext target)))))
+
+(defmethod paginate "2ch.hk" [n target]
+  (str (:target target) "/"
+       (if (zero? n)
+         "index.json"
+         (str n ".json"))))
 
 (defmethod paginate "dobrochan.ru" [n target]
   (str (:target target) "/"
@@ -140,16 +154,31 @@
        (when (not (zero? n))
          (str n "." (get-ext target)))))
 
-(defn target-pages [target pages]
-  (map #(paginate % target) (range (target pages))))
 
-(defmulti thread-url trade-dispatch)
+(defmulti meta-page-url #(:trade %))
+
+(defmethod meta-page-url "2ch.hk" [target]
+  (str (:target target) "/" "index.html"))
+
+(defmethod meta-page-url "4chan.org" [target]
+  (:target target))
+
+
+(defmethod meta-page-url :default [target]
+  nil)
+
+(defn target-pages [target n-pages]
+  (let [meta-url (meta-page-url target)
+        page-urls (map #(paginate % target) (range (target n-pages)))]
+    (if meta-url
+      (conj page-urls meta-url)
+      page-urls)))
 
 (defmethod thread-url "krautchan.net" [thread-id target]
   (str (:scheme target) (:forum target) "/thread-" thread-id "." (get-ext target)))
 
 (defmethod thread-url "4chan.org" [thread-id target]
-  (str "http://boards.4chan.org/" (:board target) "/res/" thread-id))
+  (str "https://a.4cdn.org/" (:board target) "/thread/" thread-id ".json"))
 
 (defmethod thread-url "iichan.net" [thread-id target]
   (str "http://kei.iichan.net/" (:board target) "/res/" thread-id ".html"))
@@ -165,8 +194,7 @@
 (defmulti get-thread-id trade-dispatch)
 
 (defmethod get-thread-id "4chan.org" [root-node target]
-  (let [elt (select root-node "input[type='checkbox']")]
-    (.-name elt)))
+  (root-node "no"))
 
 (defmethod get-thread-id "dobrochan.ru" [root-node target]
   (let [elt (select root-node "input[type='checkbox']")]
@@ -196,11 +224,18 @@
   (select thread 
           ".omittedposts, .omittedinfo, div.abbrev > span, span.summary, .mess-post"))
 
-(defn get-omitted-posts [thread target]
+(defmulti get-omitted-posts trade-dispatch)
+
+(defmethod get-omitted-posts :default [thread target]
   (when-let [summary-node (get-summary-node thread target)]
     (let [summary-text (.-innerHTML summary-node)
           omitted-posts (when summary-text (re-find #"\d+" summary-text))]
       (when omitted-posts (inc (js/parseInt omitted-posts))))))
+
+(defmethod get-omitted-posts "4chan.org" [thread target]
+  (let [oppost (first (thread "posts"))]
+    (if (and (:multiple (meta target)) oppost (oppost "omitted_posts"))
+      (inc (oppost "omitted_posts")))))
 
 (defn cons-post-data [&{:keys [parent-id post-num] :as init :or {post-num 1}}]
   init)
@@ -215,7 +250,7 @@
         (.setAttribute abbrev "onclick" 
                        (str "return frontend.iv_expand_post(this, '" xpnd-url "')")))))
   (let [width-height (when image-size (re-find #"(\d+)[x\u00d7](\d+)" (.-innerHTML image-size)))
-        post-text (fix-links (sanitize (.-innerHTML post-text)) target)]
+        post-text (when post-text (fix-links (sanitize (.-innerHTML post-text)) target))]
     (merge data
            {:id post-id
             :internal-id (str (:prefix target) post-id)
@@ -225,7 +260,7 @@
             :thumb (when thumb-img (fix-url (.getAttribute thumb-img "src") target))
             :image (when image-link (fix-url (.getAttribute image-link "href") target))
             :image-size (if image-size [(get width-height 1) (get width-height 2)] [0 0])
-            :text (check-reflinks post-id (:parent-id data) post-text target)
+            :text (when post-text (check-reflinks post-id (:parent-id data) post-text target))
             })))
 
 (defn build-image-data [thread-id thumb-img image-link image-size target]
@@ -238,6 +273,11 @@
      :image image-link
      :image-size (if image-size [(get width-height 1) (get width-height 2)] [0 0])
      }))
+
+(defmulti parse-images trade-dispatch)
+
+(defmulti parse-thread-images trade-dispatch)
+
 
 (defn build-error-data [message target]
   {:id "-"
@@ -261,11 +301,11 @@
 (defmethod get-oppost "0chan.hk" [thread target]
   (select thread ".postnode"))
 
-(defmethod get-oppost "2ch.hk" [thread target]
-  (select thread ".oppost"))
+;; (defmethod get-oppost "2ch.hk" [thread target]
+;;   (select thread ".oppost"))
 
 (defmethod get-oppost "4chan.org" [thread target]
-  (select thread ".op"))
+  (first (thread "posts")))
 
 (defmethod get-oppost "krautchan.net" [thread target]
   (select thread ".thread_body"))
@@ -295,11 +335,13 @@
 (defn parse-post-generic [root-node data target]
   (let [thread-id (get-thread-id root-node target)
         poster-name-elt (select root-node "span[class*='postername']")
-        poster-name (when poster-name-elt (str/trim (.-textContent poster-name-elt)))
-        date-elt (select root-node ".posttime, label")
+        post-name-text (when post-name-elt (.-textContent poster-name-elt))
+        poster-name (when poster-name-text (str/trim post-name-text))
+        date-elt (select root-node ".postdate, .posttime, .date, label")
         date-elt (when date-elt (aget (.-childNodes date-elt) 
                                       (dec (.-length (.-childNodes date-elt)))))
-        date-val (when date-elt (str/trim (.-nodeValue date-elt)))
+        date-text (when date-elt (.-nodeValue date-elt))
+        date-val (when date-text (str/trim date-text))
         date-val (str poster-name (when (and poster-name date-val) ", ") date-val)
         title-elt (select root-node "span[class*='title']")
         thumb-img (select root-node "img[src*='thumb/'], 
@@ -363,6 +405,121 @@
   ([threads target]
      (parse-structured threads "table .reply" target)))
 
+
+;; json stuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmulti get-json-thread-id trade-dispatch)
+
+(defmethod get-json-thread-id "2ch.hk" [thread target]
+  (thread "thread_num"))
+
+(defmethod get-json-thread-id "4chan.org" [thread target]
+  (let [oppost (get-oppost thread target)]
+    (when (and (:multiple (meta target)) oppost)
+      (oppost "no"))))
+
+(defmulti get-json-post-images trade-dispatch)
+
+(defmethod get-json-post-images "2ch.hk" [post target]
+  (post "files"))
+
+(defmethod get-json-post-images "4chan.org" [post target]
+  (when (post "filename")
+    [post]))
+
+(defmethod get-oppost "2ch.hk" [thread target]
+  (first (thread "posts")))
+
+(defmethod get-omitted-posts "2ch.hk" [thread target]
+  (if (and (:multiple (meta target)) (< 3 (count (thread "posts"))))
+    (inc (thread "posts_count"))))
+
+;; actually gets post id (for compatibility with html code)
+(defmethod get-thread-id "2ch.hk" [thread target]
+  (thread "num"))
+
+(defmethod thread-url "2ch.hk" [thread-id target]
+  (str (:scheme target) (:forum target) "/res/" thread-id ".json"))
+
+
+(defmethod parse-post "2ch.hk" [root-node data target]
+  (let [post-id (root-node "num")
+        post-text (fix-links (sanitize (root-node "comment")) target)
+        image (first (root-node "files"))
+        flag (root-node "icon")]
+    (merge data
+           {:id (str post-id)
+            :internal-id (str (:prefix target) post-id)
+            :date (root-node "date")
+            :link (str (:scheme target) (:forum target) "/res/" (or (:parent-id data) post-id) ".html")
+            :thumb (when image (fix-url (image "thumbnail") target))
+            :image (when image (fix-url (image "path") target))
+            :image-size (if image [(image "width") (image "height")] [0 0])
+            :text (check-reflinks post-id (:parent-id data) post-text target)
+            :flag (when flag [(fix-url (get (re-find #"src=\"([^\"]*)\"" flag) 1) target)
+                              ""])
+            })))
+
+(defmulti json->image #(:trade %3))
+
+(defmethod json->image "2ch.hk" [thread-id image target]
+  (let [image-link (fix-url (image "path") target)]
+    {:id thread-id
+     :internal-id image-link
+     :link (str/replace (thread-url thread-id target) ".json" ".html")
+     :thumb (fix-url (image "thumbnail") target)
+     :image image-link
+     :image-size [(image "width") (image "height")]
+     }))
+
+(defmethod json->image "4chan.org" [thread-id image target]
+  (let [image-link (fix-url (image "path") target)]
+    {:id thread-id
+     :link (str "http://boards." (:trade target) "/"
+                (:board target) "/thread/" thread-id)
+     :internal-id image-link
+     :thumb (when image (str "https://t.4cdn.org/" (:board target) "/" 
+                             (image "tim") "s.jpg"))
+     :image (when image (str "https://i.4cdn.org/" (:board target) "/" 
+                             (image "tim") (image "ext")))
+     :image-size (if image [(image "w") (image "h")] [0 0])
+     }))
+
+(defn parse-json [json target]
+  (let [pattern (filt/user-pattern target)
+        data (for [thread (json "threads")]
+               (when-let [oppost-node (get-oppost thread target)]
+                 (let [data (cons-post-data :omitted (get-omitted-posts thread target)
+                                            :page-index (:page-index (meta target))
+                                            :oppost true)
+                       oppost (parse-post oppost-node data target)]
+                   (when (filt/filter-shallow pattern oppost target)
+                     (let [replies (rest (thread "posts"))]
+                       (parse-replies oppost replies target))))))]
+    (filt/filter-deep pattern data target)))
+
+(defn parse-images-json [json target]
+  (apply concat 
+         (for [thread (json "threads")]
+           (let [thread-id (get-json-thread-id thread target)]
+             (apply concat 
+                    (for [post (thread "posts")]
+                      (map #(json->image thread-id % target) 
+                           (get-json-post-images post target))))))))
+
+(defmethod parse-images "2ch.hk" [doc-tree target]
+  (parse-images-json doc-tree target))
+
+(defmethod parse-thread-images "2ch.hk" [doc-tree target]
+  (parse-images-json doc-tree target))
+
+(defmethod parse-images "4chan.org" [doc-tree target]
+  (parse-images-json doc-tree target))
+
+(defmethod parse-thread-images "4chan.org" [doc-tree target]
+  (parse-images-json doc-tree target))
+
+
 ;; flat scrapper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn parse-flat [doc-tree target]
@@ -398,29 +555,29 @@
 ;; site-specific parsers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmethod parse-post "4chan.org" [root-node data target]
-  (let [thread-id (get-thread-id root-node target)
-        title-elt (select root-node ".post > .subject")
-        poster-name-elt (select root-node "span.nameBlock > span.name")
-        poster-name (when poster-name-elt (str/trim (.-textContent poster-name-elt)))
-        date-elt (select root-node ".dateTime")
-        date-val (when date-elt (str/replace (.-textContent date-elt) #" No\..*" ""))
-        date-val (str poster-name (when (and poster-name date-val) ", ") date-val)
-        image-link (select root-node "a.fileThumb")
-        thumb-img (when image-link (select image-link "img"))
-        filesize (select root-node ".fileText")
-        post-text (select root-node ".post > blockquote")
-        flag-elt (select root-node ".flag")
-        flag (when flag-elt 
-              [(.-value (.getAttributeNode flag-elt "class"))
-               (.-title flag-elt)])]
-    (assoc (build-post-data data thread-id date-val title-elt thumb-img 
-                            image-link filesize post-text target)
-      :flag flag)))
+  (let [post-id (root-node "no")
+        post-text (root-node "com")
+        post-text (when post-text (fix-links (sanitize post-text) target))
+        image (when (root-node "filename") root-node)
+        flag (root-node "country")]
+    (merge data
+           {:id (str post-id)
+            :internal-id (str (:prefix target) post-id)
+            :date (root-node "now")
+            :link (str "https://boards.4chan.org/" (:board target) "/thread/" 
+                       (or (:parent-id data) post-id))
+            :thumb (when image (str "https://t.4cdn.org/" (:board target) "/" 
+                                    (image "tim") "s.jpg"))
+            :image (when image (str "https://i.4cdn.org/" (:board target) "/" 
+                                    (image "tim") (image "ext")))
+            :image-size (if image [(image "w") (image "h")] [0 0])
+            :text (when post-text (check-reflinks post-id (:parent-id data) post-text target))
+            :flag (when flag [(str "flag flag-" (str/lower-case flag))
+                              (root-node "country_name")])
+            })))
 
 (defmethod parse-threads "4chan.org" [doc-tree target]
-  (parse-structured (select* doc-tree "div.board > div.thread")
-                     ".replyContainer > .reply"
-                     target))
+  (parse-json doc-tree target))
 
 (defmethod parse-post "krautchan.net" [root-node data target]
   (let [thread-id (get-thread-id root-node target)
@@ -485,13 +642,16 @@
                     target))
 
 (defmethod parse-threads "2ch.hk" [doc-tree target]
-  (parse-structured (select* doc-tree ".thread")
-                    ".reply"
-                    target))
-                     
-;; image scrappers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (parse-json doc-tree target))                     
 
-(defmulti parse-thread-images trade-dispatch)
+(defmethod parse-threads "410chan.org" [doc-tree target]
+  (parse-structured (select* doc-tree ".thrdcntnr") ".reply" target))
+
+(defmethod parse-threads "ichan.org" [doc-tree target]
+  (parse-structured (select* doc-tree "div[id*='thread']") ".reply" target))
+
+
+;; image scrappers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (defmethod parse-thread-images "dobrochan.ru" [doc-tree target]
 ;;   (let [images (select doc-tree {[:.fileinfo] [:.file]})]
@@ -536,7 +696,6 @@
                                                     target)))))
        out))))
 
-(defmulti parse-images trade-dispatch)
 
 (defmethod parse-images "krautchan.net" [doc-tree target]
   [])
@@ -555,10 +714,18 @@
 
 (defmulti transform-page-text trade-dispatch)
 
+(defmethod transform-page-text "4chan.org" [text target]
+  (if (not (.startsWith text "{\"threads\":["))
+    (str "{\"threads\":[" text "]}")
+    text))
+
 (defmethod transform-page-text :default [text target]
   text)
 
 (defmulti get-post-form trade-dispatch)
+
+(defmethod get-post-form "2ch.hk" [dom target]
+  (select dom "form#postform"))
 
 (defmethod get-post-form :default [dom target]
   (select dom "form#postform, .postform, form[name='post'], #posting_form"))
@@ -680,9 +847,9 @@
             dom (.parseFromString (new js/DOMParser) text "text/html")]
         (callback dom)))))
 
-(defmulti get-captcha #(:trade %2))
+(defmulti get-captcha #(:trade %3))
 
-(defn get-recaptcha [url target callback]
+(defn get-recaptcha [url parent target callback]
   (cb-let [dom] (get-thread-dom url target)
     (when dom 
       (when-let [form (get-post-form dom target)]
@@ -696,22 +863,29 @@
                      challenge (.substring link (inc (.indexOf link "=")))]
                  (callback {:link link :challenge challenge})))))))))
 
-(defmethod get-captcha "4chan.org" [url target callback]
+(defmethod get-captcha "4chan.org" [url parent target callback]
   (get-recaptcha url target callback))
 
-(defmethod get-captcha "7chan.org" [url target callback]
+(defmethod get-captcha "7chan.org" [url parent target callback]
   (get-recaptcha url target callback))
 
-(defmethod get-captcha "2ch.hk" [url target callback]
-  (cb-let [response] (io/get-page "http://2ch.hk/makaba/captcha.fcgi")
-    (if (= (:state response) "ok")
-      (let [page (:page response)
-            text (:text page)
-            key (.substr text (inc (.lastIndexOf text "\n")))
-            link (str "http://i.captcha.yandex.net/image?key=" key)]
-        (callback {:link link :challenge key})))))
+(defmethod get-captcha "2ch.hk" [url parent target callback]
+  (let [url (str "https://2ch.hk/makaba/captcha.fcgi?type=2chaptcha"
+                 "&board=" (:board target)
+                 (when parent
+                   (str "&action=thread")))]
+    (cb-let [response] (io/get-page url)
+            (if (= (:state response) "ok")
+              (let [page (:page response)
+                    text (:text page)]
+                (callback (if (.startsWith text "CHECK")
+                            (let [key (.substr text (inc (.lastIndexOf text "\n")))
+                                  link (str "https://2ch.hk/makaba/captcha.fcgi?type=2chaptcha"
+                                            "&action=image&id=" key)]
+                              {:link link :challenge key})
+                            {})))))))
 
-(defmethod get-captcha "iichan.hk" [url target callback]
+(defmethod get-captcha "iichan.hk" [url parent target callback]
   (let [link (let [[_ board thread] (re-find #".*/([^/]*)/[^/]*/(\d+)\..*$" url)
                    script (if (#{"a" "b"} board) "captcha1.pl" "captcha.pl")]
                (if thread
@@ -721,17 +895,17 @@
                    (str "http://iichan.hk/cgi-bin/" script "/" board "/?key=mainpage"))))]
     (callback {:link (str link "#i" (.random js/Math))})))
 
-(defmethod get-captcha "410chan.org" [url target callback]
+(defmethod get-captcha "410chan.org" [url parent target callback]
   (let [link (let [[_ board] (re-find #"410chan\.org/([^/]*)/.*" url)]
                (str "http://410chan.org/faptcha.php?board=" board))]
     (callback {:link (str link "#i" (.random js/Math))})))
 
-(defmethod get-captcha "dobrochan.ru" [url target callback]
+(defmethod get-captcha "dobrochan.ru" [url parent target callback]
   (let [link (let [[_ board] (re-find #"dobrochan\.ru/([^/]*)/.*" url)]
                (str "http://dobrochan.ru/captcha/" board "/" (.getTime (new js/Date)) ".png"))]
   (callback {:link link})))
 
-(defmethod get-captcha :default [url target callback]
+(defmethod get-captcha :default [url parent target callback]
   (cb-let [dom] (get-thread-dom url target)
     (when-let [form (get-post-form dom target)]
       (when-let [img (select form "img")]
@@ -757,7 +931,7 @@
 (defmethod get-post-error "7chan.org" [response target])
 
 (defmethod get-post-error "2ch.hk" [response target]
-  (let [json (JSON/parse (:text response))]
+  (let [json (.parse js/JSON (:text response))]
     (when-let [err (aget json "Error")]
       (when (not (nil? err))
         (aget json "Reason")))))
@@ -777,17 +951,18 @@
 
 (defmethod adjust-form "4chan.org" [form target]
   (set! (.-__parent_key__ form) "resto")
-  (set! (.-__captcha_challenge__ form) "recaptcha_challenge_field")
+;  (set! (.-__captcha_challenge__ form) "recaptcha_challenge_field")
   (let [captcha-line (select form "#captchaFormPart")
         toggle-node (select form "#togglePostFormLink")
-        blotter (select form "#blotter")]
+        blotter (select form "#blotter")
+        captcha-fallback (select form "noscript > div")]
     (when toggle-node (set! (.-display (.-style toggle-node)) "none"))
     (when blotter (set! (.-display (.-style blotter)) "none"))
-    (set! (.-innerHTML captcha-line) "<td class=\"desktop\">Verification</td>
-                                      <td>
-                                        <img/><br/>
-                                        <input type=\"text\" name=\"recaptcha_response_field\"
-                                               autocomplete=\"off\">
+;    (when captcha-fallback (.removeChild (.-parentNode captcha-fallback) captcha-fallback))
+;    (when captcha-fallback (.appendChild (.-lastChild captcha-line) captcha-fallback))
+
+    #_(set! (.-innerHTML captcha-line) "<td class=\"desktop\">Verification</td>
+                                      <td><div id=\"recaptcha-4chan-post\"></div>
                                       </td>"))
   form)
 
@@ -802,8 +977,10 @@
   form)
 
 (defmethod adjust-form "2ch.hk" [form target]
-  (set! (.-__captcha_challenge__ form) "captcha")
-  (set! (.-action form) (str (.-action form) "?json=1"))
+  (set! (.-__parent_key__ form) "thread")
+  (set! (.-__captcha_row__ form) ".captcha-row")
+  (set! (.-__captcha_challenge__ form) "2chaptcha_id")
+  (set! (.-action form) (str (fix-url (.-action form) target) "?json=1"))
   (set! (.-action form) (str/replace (.-action form) "http:" "https:"))
   (let [captcha-line (select form "div.captcha-box")
         text-area (select form "#shampoo")
@@ -814,21 +991,29 @@
         qr-image3 (select form "#image3")
         qr-image4 (select form "#image4")
         hr (select form "hr")
-        buy-pass (select form ".kupi-passcode-suka")]
-    (set! (.-cssFloat (.-style submit)) "right")
+        buy-pass (select form ".kupi-passcode-suka")
+        captcha-type (select form "input[name=\"captcha_type\"]")
+        usercode (select form "input[name=\"usercode\"]")
+        oekaki (select form ".oekaki-images-area")
+        rules (select form ".rules-area")]
+    (when submit (set! (.-cssFloat (.-style submit)) "right"))
     (when buy-pass (set! (.-display (.-style buy-pass)) "none"))
-    (set! (.-__parent_key__ form) "thread")
-    (set! (.-display (.-style message-byte-len)) "none")
+    ;(when usercode (.removeChild (.-parentNode usercode) usercode))
+    ;(when captcha-type (.removeChild (.-parentNode captcha-type) captcha-type))
+   ;(when captcha-type (set! (.-value captcha-type) "yandex"))
+    (when message-byte-len (set! (.-display (.-style message-byte-len)) "none"))
     (when hr (set! (.-display (.-style hr)) "none"))
     (when send-mob (set! (.-display (.-style send-mob)) "none"))
     (when buy-pass (set! (.-display (.-style buy-pass)) "none"))
+    (when oekaki (set! (.-display (.-style oekaki)) "none"))
+    (when rules (set! (.-display (.-style rules)) "none"))
     (when qr-image2 (set! (.-display (.-style qr-image2)) "none"))
     (when qr-image3 (set! (.-display (.-style qr-image3)) "none"))
     (when qr-image4 (set! (.-display (.-style qr-image4)) "none"))
-    (set! (.-width (.-style text-area)) "500px")
-    (set! (.-innerHTML captcha-line) "<img/><br/>
-                                      <input type=\"text\" name=\"captcha_value_id_06\"
-                                             autocomplete=\"off\">"))
+    (when text-area (set! (.-width (.-style text-area)) "500px"))
+    (when captcha-line (set! (.-innerHTML captcha-line) "<img/><br/>
+                                                         <input type=\"text\" name=\"2chaptcha_value\"
+                                                         autocomplete=\"off\">")))
   form)
 
 (defmethod adjust-form "dobrochan.ru" [form target]
@@ -837,6 +1022,8 @@
 
 (defmethod adjust-form "410chan.org" [form target]
   (set! (.-__parent_key__ form) "replythread")
+  (doseq [sm (select* form "small")]
+    (.removeChild (.-parentNode sm) sm))
   form)
 
 (defmethod adjust-form :default [form target]
@@ -869,13 +1056,16 @@
 
 ;;;;;;;;;;;;;
 
-(defn parse-page [page target &{:keys [get-metadata]}]
+(defn parse-page [page target &{:keys [get-metadata multiple]}]
   (let [error-msg (str "<span class=\"red\">Error loading page: " (:url page))]
     (if (= (:error page) "http_error")
       [(build-error-data (str error-msg " (" (:status page) ")") target)]
-      (let [target (with-meta target {:page-index (:index page)})
+      (let [target (with-meta target {:page-index (:index page)
+                                      :multiple multiple})
             text (transform-page-text (:text page) target)
-            dom (.parseFromString (new js/DOMParser) text "text/html")
+            dom (if (json? target)
+                  (js->clj (.parse js/JSON text))
+                  (.parseFromString (new js/DOMParser) text "text/html"))
             threads (if (:img target)
                       (parse-images dom target)
                       (parse-threads dom target))
@@ -887,3 +1077,10 @@
             (with-meta [] meta)
             (let [threads [(build-error-data error-msg target)]]
               (with-meta threads meta))))))))
+
+(defn get-page-meta [page target]
+  (when (not= (:error page) "http_error")
+    (let [text (transform-page-text (:text page) target)
+          dom (.parseFromString (new js/DOMParser) text "text/html")]
+      {:form (extract-form dom target)
+       :navbar (extract-navbar dom target)})))

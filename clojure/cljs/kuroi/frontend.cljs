@@ -13,7 +13,6 @@
    [cljs.reader :as reader]
 
    [goog.dom :as dom]
-   [goog.uri :as uri]
    [goog.Uri :as uri]
    [goog.math :as math]
    [goog.fx.Dragger :as dragger]
@@ -32,6 +31,7 @@
    [goog.ui.FlatButtonRenderer :as flat-button-rndr]
    [goog.positioning :as pos]
    )
+   (:import [goog.positioning AnchoredViewportPosition ClientPosition Corner])
   (:use-macros [kuroi.macros :only [cb-let with-page s-in? log]]))
 
 (def *target*)
@@ -54,6 +54,19 @@
 (def loading-post)
 (def service-loading)
 (def obtaining-data)
+
+
+(def *dom-helper* (dom/DomHelper. js/document))
+
+(defn dom-get-element [id]
+  (dom/getElement id))
+
+(defn dom-get-elements-by-class [name]
+  (dom/getElementsByClass name))
+
+(defn dom-find-node [root f]
+  (dom/findNode root f))
+
 
 (defn file-base [file]
   (str *file-base* file))
@@ -80,7 +93,7 @@
 ;; utils ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn child-by-class [root class-name]
-  (dom/findNode root (fn [node]
+  (dom-find-node root (fn [node]
                        (when-let [node-classname (.-className node)]
                          (>= (.indexOf node-classname class-name) 0)))))
 
@@ -109,10 +122,10 @@
           (recur (.-parentNode parent)))))))
 
 (defn child-by-id [root id]
-  (dom/findNode root #(= (.-id %) id))) 
+  (dom-find-node root #(= (.-id %) id))) 
 
 (defn create-elt [tag attrs]
-  (dom/createDom tag (.-strobj attrs)))
+  (.createDom *dom-helper* tag (clj->js attrs)))
 
 (defn hide-elt [e]
   (set! (.-display (.-style e)) "none"))
@@ -121,7 +134,7 @@
   (set! (.-display (.-style e)) display))
 
 (defn show-output [content]
-  (let [output (dom/getElement "output")]
+  (let [output (dom-get-element "output")]
     (set! (.-innerHTML output) content)))
 
 (defn load-external [filename filetype]
@@ -182,7 +195,9 @@
           (doseq [i (seq indicators)]
             (set! (.-src i) (themed-image (.getAttribute i "src")))))
         (.removeChild t-h (.-firstChild t-h))
-        (.appendChild t-h threads))
+        (.appendChild t-h threads)
+        #_(let [loading-line (.querySelector t-h ".thread-line")]
+          (.removeChild loading-line (.-patentNode loading-line))))
       (set! (.-innerHTML t-h) err-msg))
     (when (:alert meta)
       (js/alert (:alert meta)))))
@@ -191,7 +206,7 @@
   (when hide-indicator
     (when-let [loading-thread (.querySelector threads ".loading-thread")]
       (hide-elt loading-thread)))
-  (let [t-h (dom/getElement "thread-headlines")]
+  (let [t-h (dom-get-element "thread-headlines")]
     (.appendChild t-h threads)))
 
 (defn set-events [el events]
@@ -207,6 +222,24 @@
     (.setAttribute el k v)))
 
 (defn get-target [thread-line]
+  (if (or (not *target*) (:chain *target*))
+                           ;; general case (button in thread stream)
+    (let [thread-group (or (when-let [group-line (sibling-by-class thread-line "group-line")]
+                             (child-by-class group-line "thread-group"))
+                           (when-let [thread-stream (parent-by-class thread-line "thread-stream")]
+                             (.querySelector thread-stream ".thread-group"))
+                           ;; button in the stats line
+                           thread-line)]
+      (when thread-group
+        (when-let [board-link (if (:chain *target*) 
+                                ;; <a> element
+                                (child-by-class thread-group "board-link")
+                                ;; group line in the watch list
+                                thread-group)]
+          (bk/make-target (str (.-innerHTML board-link))))))
+    *target*))
+
+#_(defn get-target [thread-line]
   (if (or (not *target*) (:chain *target*))
                            ;; general case (button in thread stream)
     (let [thread-group (or (when-let [group-line (sibling-by-class thread-line "group-line")]
@@ -337,7 +370,7 @@
           (set! (.-moved full) false))
          ; none
         (let [full (.createElement js/document (if video? "video" "img"))
-              existing (dom/getElement "_fullimg")
+              existing (dom-get-element "_fullimg")
               scr-w (.-clientWidth (.-body js/document))
               scr-h (.-innerHeight js/window)
               [new-w new-h] (if (or (> full-w scr-w) (> full-h scr-h))
@@ -382,8 +415,8 @@
 
 (defn hide-popup [e post]
   (let [popup (popups post)
-        popup-elt (dom/getElement (str "popup-" post))
-        out (dom/getElement "output")]
+        popup-elt (dom-get-element (str "popup-" post))
+        out (dom-get-element "output")]
     (when (and popup popup-elt)
       (let [box (style/getBounds popup-elt)
             point (goog.math.Coordinate. (.-clientX e) (.-clientY e))]
@@ -392,9 +425,9 @@
 
 (defn dismiss-popup [popup]
   (let [post (.-post_ popup)
-        popup-elt (dom/getElement (str "popup-" post))]
+        popup-elt (dom-get-element (str "popup-" post))]
     (when popup-elt
-      (events/unlisten popup-elt goog.events.EventType/MOUSEOUT)
+      (events/removeAll popup-elt goog.events.EventType/MOUSEOUT)
       (.removeChild (.-body js/document) popup-elt))
     (set! popups (dissoc popups post))))
 
@@ -411,7 +444,10 @@
 (def failed-node nil)
 (def loading-popup? nil)
 (defn ^:export show-popup [e post show?]
-  (let [make-popup (fn [node]
+  (let [get-thread-id (fn [element]
+                        (let [post-container (parent-by-class element "post-container")]
+                          (when post-container  (.getAttribute post-container "data-thread-id"))))
+        make-popup (fn [node]
                      (let  [post (if node post "loading")
                             popup-elt
                             (create-elt "div"
@@ -428,16 +464,16 @@
                            (.appendChild popup-elt reply-elt)))
                        (let [popup (goog.ui.Popup. popup-elt)
                              corner (quadrant-dispatch (.-clientX e) (.-clientY e)
-                                                       goog.positioning.Corner/TOP_LEFT
-                                                       goog.positioning.Corner/TOP_RIGHT
-                                                       goog.positioning.Corner/BOTTOM_LEFT
-                                                       goog.positioning.Corner/BOTTOM_RIGHT)
+                                                       Corner/TOP_LEFT
+                                                       Corner/TOP_RIGHT
+                                                       Corner/BOTTOM_LEFT
+                                                       Corner/BOTTOM_RIGHT)
                              dd (quadrant-dispatch (.-clientX e) (.-clientY e)
                                                    [-5 -5] [5 -5] [-5 5] [5 5])]
                          (set! popups (assoc popups post popup))
                          (set! (.-post_ popup) post)
                          (.setPinnedCorner popup corner)
-                         (.setPosition popup (goog.positioning.ClientPosition.
+                         (.setPosition popup (ClientPosition.
                                               (+ (.-clientX e) (first dd))
                                               (+ (.-clientY e) (second dd))))
                          (events/listen popup
@@ -455,7 +491,8 @@
                     (let [popup (make-popup node)]
                       (when (not node)
                         (set! loading-popup? true)
-                        (cb-let [reply] (bk/get-popup-post {:url (.-href (.-target e))})
+                        (cb-let [reply] (bk/get-popup-post {:thread-id (get-thread-id (.-target e))
+                                                            :url (.-href (.-target e))})
                            (if reply
                              (do
                                (dismiss-popup popup)
@@ -467,7 +504,7 @@
                            (set! loading-popup? nil))))))]
     (when (not loading-popup?)
       (if (and (not= failed-node post) show?)
-        (let [nodes (dom/getElementsByClass "reply-no" (dom/getElement "thread-stream"))
+        (let [nodes (dom-get-elements-by-class "reply-no" (dom-get-element "thread-stream"))
               node (loop [n (dec (.-length nodes))]
                      (when (>= n 0)
                        (let [node (aget nodes n)]
@@ -509,17 +546,17 @@
       (js/setTimeout #(lazy-get-watch element watch-stream?) 2000))))
 
 (defn ^:export expand-thread [post-id expand? &{:keys [mass]}]
-  (let [post (dom/getElement post-id)
-        thread-headlines (dom/getElement "thread-headlines")
+  (let [post (dom-get-element post-id)
+        thread-headlines (dom-get-element "thread-headlines")
         thread-line (parent-by-class post "thread-line")
         target (get-target thread-line)
         thread-no (child-by-class thread-line "thread-no")
         thread-id (.-textContent thread-no)
-        expand-btn (when (not mass) (dom/getElement "expand-btn"))
+        expand-btn (when (not mass) (dom-get-element "expand-btn"))
         expand-trigger (child-by-class (.-parentNode post) "expand-trigger")
         post-text (child-by-class post "oppost-text")
         replies (child-by-class post "replies")
-        nav-popup (dom/getElement "nav-popup")
+        nav-popup (dom-get-element "nav-popup")
         expanded_? (= "true" (.getAttribute expand-trigger "expanded_"))]
     (hide-elt nav-popup)
     (cond (or (false? expand?) (and (= expand? js/undefined) expanded_?))
@@ -629,9 +666,9 @@
       (set! (.-innerHTML service-pane) service-html)
       (when reply
                   ; in the case of an oppost expansion
-        (when-let [post-text (child-by-class reply "oppost-text")]
+        (when-let [post-text (.querySelector reply ".oppost-text")]
           (set! (.-maxHeight (.-style post-text)) "none"))
-        (.insertBefore reply-elt (child-by-class reply "post-container")
+        (.insertBefore reply-elt (.querySelector reply ".post-container")
                        post-container)
         (.removeChild reply-elt post-container))))
   false)
@@ -662,23 +699,23 @@
     (if  *target*
       (do 
         (load-external (str "http://" (:trade *target*) "/favicon.ico") "ico")
-        (set! (.-innerHTML (dom/getElement "thread-list-caption") )
+        (set! (.-innerHTML (dom-get-element "thread-list-caption") )
               (str "<b>" (:trade target) "</b> board chain"))
         (cb-let [threads stats meta] (bk/load-threads {:target target :key :pages})
           (when-let [form (:form meta)]
             (.appendChild (.-body js/document) (:form meta)))
           (when-let [navbar (:navbar meta)]
-            (.appendChild (dom/getElement "nav-popup") navbar))
+            (.appendChild (dom-get-element "nav-popup") navbar))
           (when threads
             (set! (.-innerHTML (child-by-class threads "thread-group"))
                   (format-stats stats target))
             (insert-threads threads :meta meta)
             (js/setTimeout #(continue-chain (rest links) key) 200))))
-      (let [t-h (dom/getElement "thread-headlines")]
+      (let [t-h (dom-get-element "thread-headlines")]
         (set! (.-innerHTML t-h) error-loading-page)))))
 
 (defn load-threads [pages subsequent]
-  (let [thread-headlines (dom/getElement "thread-headlines")
+  (let [thread-headlines (dom-get-element "thread-headlines")
         url *resource*]
     (set! (.-innerHTML thread-headlines) obtaining-data)
     (if (and (> (.indexOf url "]") 0)
@@ -691,7 +728,7 @@
         (if *target*
           (let [target (assoc *target* :subsequent subsequent)] 
             (load-external (str "http://" (:trade target) "/favicon.ico") "ico")
-            (set! (.-innerHTML (dom/getElement "thread-list-caption"))
+            (set! (.-innerHTML (dom-get-element "thread-list-caption"))
                   (str "Loading " (pages target)
                        (if (not= (pages target) 1)
                          " pages..."
@@ -700,11 +737,11 @@
                     (when-let [form (:form meta)]
                       (.appendChild (.-body js/document) form))
                     (when-let [navbar (:navbar meta)]
-                      (.appendChild (dom/getElement "nav-popup") navbar))
-                    (set! (.-innerHTML (dom/getElement "thread-list-caption"))
+                      (.appendChild (dom-get-element "nav-popup") navbar))
+                    (set! (.-innerHTML (dom-get-element "thread-list-caption"))
                           (format-stats stats target))
                     (insert-threads threads :meta meta)))
-          (let [t-h (dom/getElement "thread-headlines")]
+          (let [t-h (dom-get-element "thread-headlines")]
             (set! (.-innerHTML t-h) error-loading-page)))))))
 
 (defn refresh-handler [pages]
@@ -712,10 +749,10 @@
     (load-threads pages true)))
 
 (defn ^:export expand-btn-handler [e]
-  (let [expand-btn (dom/getElement "expand-btn")
-        nav-popup (dom/getElement "nav-popup")
-        tab-page (dom/getElement "tab-page")
-        threads (dom/getElementsByClass "thread-oppost" tab-page)
+  (let [expand-btn (dom-get-element "expand-btn")
+        nav-popup (dom-get-element "nav-popup")
+        tab-page (dom-get-element "tab-page")
+        threads (dom-get-elements-by-class "thread-oppost" tab-page)
         expand? (if (= (.-textContent expand-btn) "Expand") true false)]
     (hide-elt nav-popup) ; popup uses the 'visibility' css rule, but we need to set 'display'
     (if (= (.-textContent expand-btn) "Expand")
@@ -734,29 +771,29 @@
     (show-elt nav-popup "block")))
 
 (defn setup-snapin-buttons []
-  (let [s-btn (dom/getElement "settings-btn")]
+  (let [s-btn (dom-get-element "settings-btn")]
     (events/listen s-btn
                    goog.events.EventType/CLICK
                    #(inline-dialog "Settings" (str *protocol* ":settings?target=" 
                                                    (:trade *target*)))))
 
-  (let [w-btn (dom/getElement "watch-btn")]
+  (let [w-btn (dom-get-element "watch-btn")]
     (events/listen w-btn
                    goog.events.EventType/CLICK
                    #(inline-dialog "Watch" (str *protocol* ":watch"))))
 
-  (let [h-btn (dom/getElement "help-btn")]
+  (let [h-btn (dom-get-element "help-btn")]
     (events/listen h-btn
                    goog.events.EventType/CLICK
                    #(inline-dialog "Help" (str *protocol* ":help"))))
 
   (when (:chain *target*)
-    (set! (.-display (.-style (dom/getElement "go-again-btn"))) "none")
-    (set! (.-display (.-style (dom/getElement "refresh-btn"))) "none"))
+    (set! (.-display (.-style (dom-get-element "go-again-btn"))) "none")
+    (set! (.-display (.-style (dom-get-element "refresh-btn"))) "none"))
 
-  (let [expand-btn (goog.ui/decorate (dom/getElement "expand-btn"))
-        go-again-btn (goog.ui/decorate (dom/getElement "go-again-btn"))
-        refresh-btn (goog.ui/decorate (dom/getElement "refresh-btn"))]
+  (let [expand-btn (goog.ui/decorate (dom-get-element "expand-btn"))
+        go-again-btn (goog.ui/decorate (dom-get-element "go-again-btn"))
+        refresh-btn (goog.ui/decorate (dom-get-element "refresh-btn"))]
     (when expand-btn
       (events/listen expand-btn
                      goog.ui.Component.EventType/ACTION
@@ -781,7 +818,7 @@
         thread-header (or thread-header (child-by-class thread-line "thread-header"))
         thread-no (when thread-header (child-by-class thread-header "thread-no"))
         thread-id (when thread-no (.-textContent thread-no))
-        popup-elt (dom/getElement "post-form-popup")
+        popup-elt (dom-get-element "post-form-popup")
         anchor (when popup-elt (.-_anchor popup-elt))]
     (when popup-elt ; hide existing form
       (when (not new-thread?) 
@@ -805,7 +842,7 @@
              header (.-firstChild popup-elt)
              load-indicator (child-by-class header "service-loading")
              reply-to (child-by-class header "reply-to")
-             form (dom/getElement (str (:prefix target) "postform"))
+             form (dom-get-element (str (:prefix target) "postform"))
              form-clone (.cloneNode form true)
              textarea (.querySelector form-clone "textarea")
              parent-key (.-__parent_key__ form)
@@ -813,25 +850,34 @@
              captcha-attr (.-__captcha_attr__ form)
              captcha-challenge (.-__captcha_challenge__ form)
              captcha-elt (.querySelector form-clone captcha-elt)
+             captcha-row (.-__captcha_row__ form)
+             captcha-row-elt (when captcha-row (.querySelector form-clone captcha-row))
+
              set-captcha (fn [captcha-elt force]
                            (cb-let [c] (bk/get-captcha 
-                                        {:target target :thread-id thread-id :force force})
-                             (.setAttribute captcha-elt captcha-attr 
-                                            (if force 
-                                              (str (:link c) "#i" (.random js/Math))
-                                              (:link c)))
-                             (when captcha-challenge
-                               (let [challenge-elt (.querySelector 
-                                                    form-clone
-                                                    (str "input[name='" captcha-challenge "']"))]
-
-                                 (when challenge-elt
-                                   (.removeChild (.-parentNode challenge-elt) challenge-elt))
-                                 (.appendChild form-clone
-                                               (create-elt "input" 
-                                                           {"type" "hidden"
-                                                            "name" captcha-challenge
-                                                            "value" (:challenge c)}))))))
+                                        {:target target :parent (not new-thread?)
+                                         :thread-id thread-id :force force})
+                            (if (:link c)
+                             (do
+                              (.setAttribute captcha-elt captcha-attr 
+                                             (if force 
+                                               (str (:link c) "#" (.random js/Math))
+                                               (:link c)))
+                              (when captcha-challenge
+                                (let [challenge-elt (.querySelector 
+                                                     form-clone
+                                                     (str "input[name='" captcha-challenge "']"))]
+ 
+                                  (when challenge-elt
+                                    (.removeChild (.-parentNode challenge-elt) challenge-elt))
+                                  (.appendChild form-clone
+                                                (create-elt "input" 
+                                                            {"type" "hidden"
+                                                             "name" captcha-challenge
+                                                             "value" (:challenge c)})))))
+                             (if captcha-row
+                               (.removeChild (.-parentNode captcha-row-elt) captcha-row-elt)
+                               (.removeChild (.-parentNode captcha-elt) captcha-elt)))))
              handle-post-response (fn [response]
                                     (hide-elt (child-by-class popup-elt "service-loading"))
                                     (bk/forget-captcha {:target target :thread-id thread-id})
@@ -906,6 +952,12 @@
           (set-captcha captcha-elt false)
           (set! (.-onmousedown captcha-elt) #(set-captcha (.-target %) true)))
 
+        ;; (when (:fourchan target)
+        ;;   (let [script (.createElement js/document "script")]
+        ;;     (set! (.-src script) (str "https://www.google.com/recaptcha/api.js?"
+        ;;                               "onload=reCapthca_4chan_onloadCallback&render=explicit"))
+        ;;     (.appendChild (.-head js/document) script)))
+
         (when-let [sage-box (child-by-id form-clone "sagecheckbox")]
           (let [e-mail (child-by-id form-clone "e-mail")]
           (.setAttribute (.-parentNode sage-box) "onclick" "")
@@ -956,10 +1008,10 @@
 
         (let [popup (goog.ui.Popup. popup-elt)]
           (.setAutoHide popup false)
-          (.setPinnedCorner popup goog.positioning.Corner/TOP_LEFT)
-          (.setPosition popup (new goog.positioning.AnchoredViewportPosition 
+          (.setPinnedCorner popup Corner/TOP_LEFT)
+          (.setPosition popup (AnchoredViewportPosition.
                                    (.-nextSibling (.-nextSibling element))
-                                   goog.positioning.Corner/TOP_RIGHT))
+                                   Corner/TOP_RIGHT))
           (.setVisible popup true)
           (.focus textarea)
           (let [pos (.-length (.-value textarea))]
@@ -977,13 +1029,13 @@
     (set! (.-src nav-img) (themed-image (.getAttribute nav-img "src")))
     (.appendChild (.-body js/document) popup-elt)
     (set! *nav-popup* (goog.ui.Popup. popup-elt))
-    (.setPosition *nav-popup* (new goog.positioning.AnchoredViewportPosition
-                                   (dom/getElement "nav-btn")
+    (.setPosition *nav-popup* (AnchoredViewportPosition.
+                                   (dom-get-element "nav-btn")
                                    goog.positioning.Corner/BOTTOM_LEFT))
     (.setPinnedCorner *nav-popup* goog.positioning.Corner/BOTTOM_LEFT)))
 
 (defn ^:export show_nav_popup [e]
-  (dom/getElement "nav-popup")
+  (dom-get-element "nav-popup")
   (.setVisible *nav-popup* true))
 
 ;; external entry points ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1003,55 +1055,60 @@
     (let [fav-lbl (goog.ui.Tooltip. "fav-lbl")]
       (.setHtml fav-lbl "Default parameters for a board on a single line,
                      for example: <span class=\"gold\">4chan.org/c:10p:3r:img</span>.<br/>
-                     When loading the board it's possible to disable a switch specified here
-                     by adding <br/>an exclamation mark in front of it, for example: 
+                     When loading the board it's possible to disable a default switch specified here
+                     by <br/>adding an exclamation mark in front of it, for example: 
                      <span class=\"gold\">4chan.org/c:5p:!img<span class=\"gold\">."))
 
     (let [uri (goog.Uri. (.-href (.-location js/document)))
-          warning (dom/getElement "warning")]
+          warning (dom-get-element "warning")]
       (when (= "iichan.hk" (.getParameterValue uri "target"))
         (set! (.-display (.-style warning)) "inline")))
     
-    (let [remember-btn (goog.ui/decorate (dom/getElement "remember-btn"))]
+    (let [remember-btn (goog.ui/decorate (dom-get-element "remember-btn"))]
       (events/listen remember-btn
                      goog.ui.Component.EventType/ACTION
                      (fn [e] (opts/remember-threads))))
     
-    (let [clear-watch-btn (goog.ui/decorate (dom/getElement "clear-watch-btn"))]
+    (let [clear-watch-btn (goog.ui/decorate (dom-get-element "clear-watch-btn"))]
       (events/listen clear-watch-btn
                      goog.ui.Component.EventType/ACTION
                      (fn [e] (opts/clear-watch))))
 
-    (let [save-btn (goog.ui/decorate (dom/getElement "save-settings-btn"))]
+    (let [clear-data-btn (goog.ui/decorate (dom-get-element "clear-data-btn"))]
+      (events/listen clear-data-btn
+                     goog.ui.Component.EventType/ACTION
+                     (fn [e] (opts/clear-data))))
+
+    (let [save-btn (goog.ui/decorate (dom-get-element "save-settings-btn"))]
       (events/listen save-btn
                      goog.ui.Component.EventType/ACTION
                      (fn [e] (opts/save-settings))))
 
-    (set! (.-checked (dom/getElement "watch-first")) (:pin-watch-items settings))
-    (set! (.-checked (dom/getElement "remember-expanded")) (:remember-expanded settings))
-    (set! (.-value (dom/getElement "wf-title-words")) (if (:wf-title settings)
+    (set! (.-checked (dom-get-element "watch-first")) (:pin-watch-items settings))
+    (set! (.-checked (dom-get-element "remember-expanded")) (:remember-expanded settings))
+    (set! (.-value (dom-get-element "wf-title-words")) (if (:wf-title settings)
                                                         (:wf-title settings)
                                                         ""))
-    (set! (.-value (dom/getElement "wf-post-words")) (if (:wf-post settings)
+    (set! (.-value (dom-get-element "wf-post-words")) (if (:wf-post settings)
                                                        (:wf-post settings)
                                                        ""))
-    (set! (.-checked (dom/getElement "wf-enable")) (:wf-enabled settings))
-    (set! (.-value (dom/getElement "theme")) (:theme settings))
-    (set! (.-value (dom/getElement "favorites")) (if (:default-params settings)
+    (set! (.-checked (dom-get-element "wf-enable")) (:wf-enabled settings))
+    (set! (.-value (dom-get-element "theme")) (:theme settings))
+    (set! (.-value (dom-get-element "favorites")) (if (:default-params settings)
                                                    (:default-params settings)))
-    (set! (.-checked (dom/getElement "force-textonly")) (:force-text settings))))
+    (set! (.-checked (dom-get-element "force-textonly")) (:force-text settings))))
 
 (defn ^:export watch [settings]
   (with-page inline-watch-stream [settings]
     (cb-let [threads] (bk/load-watch-items nil)
       (if threads
         (insert-threads threads)
-        (let [t-h (dom/getElement "thread-headlines")]
+        (let [t-h (dom-get-element "thread-headlines")]
           (set! (.-innerHTML t-h) the-list-is-empty))))))
 
 (defn ^:export images [settings]
   (with-page inline-image-stream [settings]
-    (let [thread-headlines (dom/getElement "thread-headlines")]
+    (let [thread-headlines (dom-get-element "thread-headlines")]
       (set! (.-innerHTML thread-headlines) obtaining-data))
 
     (let [uri (goog.Uri. (.-href (.-location js/document)))
@@ -1065,7 +1122,7 @@
   (with-page video [settings]
     (let [uri (goog.Uri. (.-href (.-location js/document)))
           video-link (js/decodeURIComponent (.getParameterValue uri "video"))
-          video-elt (dom/getElement "video")]
+          video-elt (dom-get-element "video")]
       (.setAttribute video-elt "src" video-link)
 
 )))
@@ -1078,13 +1135,13 @@
 (defn ^:export urlbar [settings]
   (with-page urlbar [settings]   
 
-    (let [address-txt (dom/getElement "address-txt")
-          go-btn (goog.ui/decorate (dom/getElement "go-btn"))
+    (let [address-txt (dom-get-element "address-txt")
+          go-btn (goog.ui/decorate (dom-get-element "go-btn"))
           go-btn-handler (fn [e]
                            (when (not (str/blank? (.-value address-txt)))
                              (set! (.-location js/window)
                                    (str "/_/" (.-value address-txt)
-                                        (when (.-checked (dom/getElement "text-only"))
+                                        (when (.-checked (dom-get-element "text-only"))
                                           ":txt")))))]
       (events/listen address-txt
                      goog.events.EventType/KEYPRESS

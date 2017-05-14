@@ -44,12 +44,6 @@
         domain (get addr 3)
         board (get addr 4)
         trade (if addr (re-find #"[^.]+\.[^.]+$" domain) url)
-        trade (condp = trade
-                    "2ch.so" "2ch.hk"
-                    "0chan.ru" "0chan.hk"
-                    "iichan.ru" "iichan.hk"
-                    "410chan.ru" "410chan.org"
-                    trade)
         forum (str trade "/" board)
         defaults (:default-params-map settings)
         url (if-let [forum-defaults (and defaults (defaults forum))]
@@ -123,10 +117,17 @@
     (cb-let [response] (io/get-pages (pp/target-pages target key))
       (if (= (:state response) "ok") 
         (let [pages (:pages response)
-              threads (pp/parse-page (first pages) target :get-metadata (not (:subsequent target)))
-              thread-meta (meta threads)
+              meta-page? (pp/meta-page-url target)
+              meta-page (when meta-page? (first pages))
+              pages (if meta-page? (rest pages) pages)
+              threads (pp/parse-page (first pages) target 
+                                     :multiple true
+                                     :get-metadata (and (not meta-page?) (not (:subsequent target))))
+              thread-meta (if meta-page?
+                            (pp/get-page-meta meta-page target)
+                            (meta threads))
               threads (concat threads
-                              (reduce concat (map #(pp/parse-page % target) 
+                              (reduce concat (map #(pp/parse-page % target :multiple true) 
                                                   (rest pages))))
               threads (distinct-by :internal-id threads)
               threads (if (:rev target) (reverse threads) threads)
@@ -177,11 +178,13 @@
 
 (def thread-cache (atom {}))
 (defn get-popup-post [request callback]
-    (let [{:keys [url word-filter onwatch]} request
+    (let [{:keys [thread-id url word-filter onwatch]} request
+          target (make-target url)
           url (str/split url #"#")
-          thread-url (first url)
+          thread-url (if thread-id 
+                       (pp/thread-url thread-id target)
+                       (first url))
           reply (when (seq (second url)) (re-find #"\d+" (second url)))
-          target (make-target thread-url)
           settings (opts/get-for nil) ; sic!
           target (if (or (:txt target) (:force-text settings))
                    (assoc target :force-text true) 
@@ -207,7 +210,7 @@
                          (assoc thread :refs nil :children nil)))]
           (if thread 
             (callback (if reply 
-                        (render/replies thread target :word-filter word-filter)
+                        (render/replies thread target :word-filter word-filter :fallback? true)
                         (render/threads [(assoc thread :onwatch onwatch)] target)))
             (callback nil))))))
 
@@ -216,12 +219,12 @@
         board (.substring thread-id 0 (inc (.lastIndexOf thread-id "-")))]
     (cb-let [queue-json] (io/get-data 'forgotten 'queue board)
       (let [queue (if queue-json
-                      (JSON/parse queue-json)
+                      (.parse js/JSON queue-json)
                       (new js/Array))]
           (.push queue thread-id)
           (when (> (.-length queue) *forget-queue-size*)
             (.shift queue))
-          (io/put-data 'forgotten board {:queue (JSON/stringify queue)})))))
+          (io/put-data 'forgotten board {:queue (.stringify js/JSON queue)})))))
 
 (defn watch-thread [request callback]
   (let [{:keys [thread-id target]} request
@@ -315,14 +318,14 @@
 
 (def *captcha-cache* (atom {}))
 (defn get-captcha [request callback]
-  (let [{:keys [target thread-id force]} request
+  (let [{:keys [target parent thread-id force]} request
         thread-url (if thread-id
                      (pp/thread-url thread-id target)
                      (pp/paginate 0 target))]
     (let [kv (find @*captcha-cache* thread-url)]
       (if (and kv (not force))
         (callback (val kv))
-        (cb-let [captcha] (pp/get-captcha thread-url target)
+        (cb-let [captcha] (pp/get-captcha thread-url parent target)
            (when captcha
              (swap! *captcha-cache* assoc thread-url captcha)
              (callback captcha)))))))
