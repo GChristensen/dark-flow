@@ -3,7 +3,7 @@ Dark Flow
 
 An advanced imageboard aggregator.
 
-[![Dark Flow video](https://github.com/GChristensen/dark-flow/blob/master/screen.png)](https://www.youtube.com/watch?v=fbLqfsB5PAs)
+[![Dark Flow video](https://github.com/GChristensen/dark-flow/blob/master/screen.png)](https://www.youtube.com/watch?v=y6O8wMFR-hw)
 
 Dark Flow is a complete client-side port of the 
 [Dark Matter](https://github.com/GChristensen/dm-browser#readme) 
