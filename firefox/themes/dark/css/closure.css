@@ -1,0 +1,212 @@
+
+/* common.css ---------------------------------------------------------------*/
+
+/*
+ * Copyright 2009 The Closure Library Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by the Apache License, Version 2.0.
+ * See the COPYING file for details.
+ */
+
+/*
+ * Cross-browser implementation of the "display: inline-block" CSS property.
+ * See http://www.w3.org/TR/CSS21/visuren.html#propdef-display for details.
+ * Tested on IE 6 & 7, FF 1.5 & 2.0, Safari 2 & 3, Webkit, and Opera 9.
+ *
+ * @author attila@google.com (Attila Bodis)
+ */
+
+/*
+ * Default rule; only Safari, Webkit, and Opera handle it without hacks.
+ */
+.goog-inline-block {
+  position: relative;
+  display: -moz-inline-box; /* Ignored by FF3 and later. */
+  display: inline-block;
+}
+
+/*
+ * Pre-IE7 IE hack.  On IE, "display: inline-block" only gives the element
+ * layout, but doesn't give it inline behavior.  Subsequently setting display
+ * to inline does the trick.
+ */
+* html .goog-inline-block {
+  display: inline;
+}
+
+/*
+ * IE7-only hack.  On IE, "display: inline-block" only gives the element
+ * layout, but doesn't give it inline behavior.  Subsequently setting display
+ * to inline does the trick.
+ */
+*:first-child+html .goog-inline-block {
+  display: inline;
+}
+
+
+
+/* dialog.css ---------------------------------------------------------------*/
+
+
+/*
+ * Copyright 2009 The Closure Library Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by the Apache License, Version 2.0.
+ * See the COPYING file for details.
+ */
+
+/*
+ * Standard styling for goog.ui.Dialog.
+ *
+ * @author ssaviano@google.com (Steven Saviano)
+ * @author attila@google.com (Attila Bodis)
+ */
+
+
+.modal-dialog {
+  background: #181818;
+  border: 1px solid #757575;
+  color: #DDC771;
+  position: absolute;
+  width: 90%;
+  height: 90%;
+}
+
+.modal-dialog a,
+.modal-dialog a:link,
+.modal-dialog a:visited  {
+  color: #DDC771;
+  cursor: pointer;
+}
+
+.modal-dialog-bg {
+  background: #181818;
+  left: 0;
+  position: absolute;
+  top: 0;
+}
+
+.modal-dialog-title {
+  background: #282828;
+  color: #DDC771;
+  cursor: pointer;
+  height: 20px;
+  /* Add padding on the right to ensure the close button has room. */
+  padding: 8px 8px 8px 8px;
+  border-bottom: 1px solid #757575;
+  position: relative;
+  _zoom: 1; /* Ensures proper width in IE6 RTL. */
+}
+
+.modal-dialog-title-close, .modal-dialog-title-close:hover {
+  vertical-align: middle;
+  float: right;
+  position: relative;
+  top: -4px;
+}
+
+.modal-dialog-title-close:hover {
+  border-color: #303030;
+  color: #606060;
+  background-color: #c0c0c0;
+}
+
+
+.modal-dialog-content {
+	position: absolute;
+	width: 100%;
+	top: 37px;
+	bottom: 0;
+	overflow: hidden;
+}
+
+.goog-buttonset-default {
+  font-weight: bold;
+}
+
+
+
+/* flatbutton.css -------------------------------------------------------------*/
+
+/*
+ * Copyright 2009 The Closure Library Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by the Apache License, Version 2.0.
+ * See the COPYING file for details.
+ */
+
+/*
+ * Styling for flat buttons created by goog.ui.FlatButtonRenderer.
+ *
+ * @author brianp@google.com (Brian Peterson)
+ */
+
+.goog-flat-button {
+  position: relative;
+  /*width: 20ex;*/
+  margin: 2px;
+  border: 1px solid #757575;
+  padding: 2px 6px;
+  font: normal 13px "Trebuchet MS", Tahoma, Arial, sans-serif;
+  color: #DDC771;
+  background-color: #282828;
+  cursor: pointer;
+  outline: none;
+  -moz-outline: none;
+}
+
+/* State: disabled. */
+.goog-flat-button-disabled {
+  border-color: #888;
+  color: #888;
+  background-color: #ccc;
+  cursor: default;
+}
+
+/* State: hover. */
+.goog-flat-button-hover {
+  border-color: #303030;
+  color: #606060;
+  background-color: #c0c0c0;
+}
+
+/* State: active, selected, checked. */
+.goog-flat-button-active,
+.goog-flat-button-selected,
+.goog-flat-button-checked {
+  border-color: #303030;
+  color: #606060;
+  background-color: #c0c0c0;
+}
+
+/* State: focused. */
+.goog-flat-button-focused {
+  border-color: #757575;
+}
+
+/* Pill (collapsed border) styles. */
+.goog-flat-button-collapse-right {
+  margin-right: 0;
+}
+
+.goog-flat-button-collapse-left {
+  margin-left: 0;
+  border-left: none;
+}
+
+
+/* tooltip.css --------------------------------------------------------------*/
+
+/*
+ * Copyright 2010 The Closure Library Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by the Apache License, Version 2.0.
+ * See the COPYING file for details.
+ */
+
+.goog-tooltip {
+  background: #282828;
+  border: 1px solid #757575;
+  padding: 6px;
+  z-index: 30000;
+}
