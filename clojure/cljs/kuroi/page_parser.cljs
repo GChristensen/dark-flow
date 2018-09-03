@@ -22,6 +22,7 @@
 (defn trade-dispatch [_ target] (:trade target))
 
 (defmulti thread-url trade-dispatch)
+(defmulti html-thread-url trade-dispatch)
 
 (defn json? [target]
   (json-sources (:trade target)))
@@ -36,12 +37,15 @@
     (str/replace content #"<([^ ]+)[^>]*onload[^>]*>"
                  (fn [[_ & match]] (str "<" (first match) ">")))))
 
-(def *host* (.-host (.-location js/document)))
+(def *host* (get (re-find #"chan://([^/]*)" (js/decodeURI (.-location js/document))) 1))
 (def *host-pattern* (re-pattern (str "https?://" *host* ".*")))
 
 (defn fix-url [url target]
   (when url
-    (let [url (if io/*addon*
+    (let [url (if (.startsWith url "moz-extension://")
+                (get (re-find #"moz-extension://[^/]+(/.*)" url) 1)
+                url)
+          url (if io/*addon*
                 url
                 (if (re-matches *host-pattern* url)
                   (.substring url (+ (.indexOf url *host*) (.-length *host*)))
@@ -71,16 +75,15 @@
                                       (fn [[_ rest]]
                                         (if (and parent-id (= "#" (get rest 0)))
                                           (str "href=\"http://boards." (:trade target) "/"
-                                               (:board target) "/thread/" parent-id rest "\"")
+                                               (:board target) "/thread/" parent-id rest)
                                           (str "href=\"http://boards." (:trade target) rest))))
                          (:kraut target)
                          (str/replace url #"href=\""
                                       (str "href=\"http://" (:trade target)))
                          :else url)
-                        " " 
-                        "onclick=\"return frontend.inline_view_reflink(this)\" "
-                        "onmouseover=\"frontend.show_popup(event, '" reply-no  "', true)\" "
-                        "onmouseout=\"frontend.show_popup(event, '" reply-no "', false)\""
+                        " data-onclick=\"frontend.inline_view_reflink(this)\" "
+                        "data-onmouseover=\"frontend.show_popup(event, '" reply-no  "', true)\" "
+                        "data-onmouseout=\"frontend.show_popup(event, '" reply-no "', false)\""
                         ">&gt;&gt;" reply-no other  "</a>")))))
 
 (defn fix-links [content target]
@@ -189,6 +192,13 @@
 (defmethod thread-url :default [thread-id target]
   (str (:scheme target) (:forum target) "/res/" thread-id "." (get-ext target)))
 
+(defmethod html-thread-url :default [thread-id target]
+  (thread-url thread-id target))
+
+(defmethod html-thread-url "4chan.org" [thread-id target]
+  (str "https://a.4cdn.org/" (:board target) "/thread/" thread-id ".html"))
+
+
 ;; post data ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defmulti get-thread-id trade-dispatch)
@@ -247,8 +257,8 @@
       (let [xpnd-url (if (:oppost data)
                        (thread-url post-id target)
                        (fix-url (.getAttribute abbrev "href") target))]
-        (.setAttribute abbrev "onclick" 
-                       (str "return frontend.iv_expand_post(this, '" xpnd-url "')")))))
+        (.setAttribute abbrev "data-onclick"
+                       (str "frontend.iv_expand_post(this, '" xpnd-url "')")))))
   (let [width-height (when image-size (re-find #"(\d+)[x\u00d7](\d+)" (.-innerHTML image-size)))
         post-text (when post-text (fix-links (sanitize (.-innerHTML post-text)) target))]
     (merge data
@@ -859,7 +869,7 @@
                (let [page (:page response)
                      dom (.parseFromString (new js/DOMParser) (:text page) "text/html")
                      img (select dom "img")
-                     link (str "http://www.google.com/recaptcha/api/" (.-src img))
+                     link (str "http://www.google.com/recaptcha/api2/" (.-src img))
                      challenge (.substring link (inc (.indexOf link "=")))]
                  (callback {:link link :challenge challenge})))))))))
 
@@ -951,20 +961,40 @@
 
 (defmethod adjust-form "4chan.org" [form target]
   (set! (.-__parent_key__ form) "resto")
+  (set! (.-__is_iframe__ form) true)
+  (set! (.-__set_width__ form) "545px")
+  (set! (.-__set_height__ form) "537px")
+  (set! (.-innerHTML form) (str "<iframe style=\"height:510px; display: none;\"/>"))
+  form)
+
+  ;(set! (.-__parent_key__ form) "resto")
 ;  (set! (.-__captcha_challenge__ form) "recaptcha_challenge_field")
-  (let [captcha-line (select form "#captchaFormPart")
-        toggle-node (select form "#togglePostFormLink")
-        blotter (select form "#blotter")
-        captcha-fallback (select form "noscript > div")]
-    (when toggle-node (set! (.-display (.-style toggle-node)) "none"))
-    (when blotter (set! (.-display (.-style blotter)) "none"))
+;  (let [
+;        captcha-line (select form "#captchaFormPart")]
+;        toggle-node (select form "#togglePostFormLink")
+;        blotter (select form "#blotter")
+;        captcha-fallback (select form "noscript > div")
+;        key-script-elt (last (select* form "script"))
+;        key-script (when key-script-elt (.-textContent key-script-elt))
+;        ]
+
+       ;(when key-script
+       ;  (let [key (get (re-find #"\"([^\"]+)\"" key-script) 1)
+       ;        main-script (select captcha-line "script")]
+       ;       (when main-script
+       ;             (let [src (.getAttribute main-script "src")]
+       ;                  (.setAttribute main-script "src" (.replace src "&render=explicit" "")))
+       ;             (.setAttribute main-script "data-sitekey" key))))
+
+    ;(when toggle-node (set! (.-display (.-style toggle-node)) "none"))
+    ;(when blotter (set! (.-display (.-style blotter)) "none"))
 ;    (when captcha-fallback (.removeChild (.-parentNode captcha-fallback) captcha-fallback))
 ;    (when captcha-fallback (.appendChild (.-lastChild captcha-line) captcha-fallback))
 
-    #_(set! (.-innerHTML captcha-line) "<td class=\"desktop\">Verification</td>
-                                      <td><div id=\"recaptcha-4chan-post\"></div>
-                                      </td>"))
-  form)
+    ;#_(set! (.-innerHTML captcha-line) "<td class=\"desktop\">Verification</td>
+    ;                                  <td><div id=\"recaptcha-4chan-post\"></div>
+    ;                                  </td>"))
+;  form)
 
 (defmethod adjust-form "7chan.org" [form target]
   (set! (.-__parent_key__ form) "replythread")

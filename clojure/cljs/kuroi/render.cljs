@@ -27,6 +27,33 @@
       (str/replace #"<embed[^>]*>" "")
       (str/replace #"((?:<blockquote)|(?:<div)|(?:<p))" "$1 style=\"display: inline\" ")))
 
+
+(defn replace-events [n]
+    (let [with-event (.querySelectorAll n "*[data-onclick]")]
+         (.forEach with-event (fn [we]
+                                   (set! (.-onclick we)
+                                         (fn [event]
+                                             (set! (.-_event we) event)
+                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onclick")"")))))))
+    (let [with-event (.querySelectorAll n "*[data-onload]")]
+         (.forEach with-event (fn [we]
+                                   (set! (.-onload we)
+                                         (fn [event]
+                                             (set! (.-_event we) event)
+                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onload")"")))))))
+    (let [with-event (.querySelectorAll n "*[data-onmouseover]")]
+         (.forEach with-event (fn [we]
+                                   (set! (.-onmouseover we)
+                                         (fn [event]
+                                             (set! (.-_event we) event)
+                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onmouseover")"")))))))
+    (let [with-event (.querySelectorAll n "*[data-onmouseout]")]
+         (.forEach with-event (fn [we]
+                                   (set! (.-onmouseout we)
+                                         (fn [event]
+                                             (set! (.-_event we) event)
+                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onmouseout")""))))))))
+
 (em/deftemplate watch :compiled "templates/watch-stream.html" 
   [threads target]
   [:.thread-line]
@@ -61,7 +88,7 @@
                (mk/do-when (and (:image th) (not (:force-text target)))
                  (ef/do->
                   (ef/set-attr :href (:image th))
-                  (ef/set-attr :onclick (str "return frontend.expand_image(this,"
+                  (ef/set-attr :data-onclick (str "frontend.expand_image(this,"
                                              (first (:image-size th)) ","
                                              (second (:image-size th)) ")"))))
                [:.watch-image-container]
@@ -100,7 +127,7 @@
                   (:children (fltr/filter-replies (:wf-post-parsed settings) thread target))
                   (:children thread))]
   (fn [node]
-    ((mk/clone-for-live-node root-node 10 [rep replies]
+    ((mk/clone-for-live-node root-node 10 nil [rep replies]
                 [:.post-container]
                 (ef/set-attr :data-thread-id (:id thread))
                 [:.reply-header]
@@ -133,7 +160,7 @@
                 (mk/do-when (and (not (:force-text target)) (:image rep))
                   (ef/do->
                    (ef/set-attr :href (:image rep))
-                   (ef/set-attr :onclick (str "return frontend.expand_image(this,"
+                   (ef/set-attr :data-onclick (str "frontend.expand_image(this,"
                                            (first (:image-size rep)) ","
                                            (second (:image-size rep)) ")"))))
                 [:.image-container]
@@ -147,14 +174,14 @@
                 [:.crossref-container]
                 (mk/remove-when (not (seq (:refs rep))))
                 [:.crossref-wrap]
-                (em/clone-for [ref (:refs rep)]
+                (mk/clone-for [ref (:refs rep)]
                               [:.crossref]
                               (ef/do-> 
                                (ef/set-attr :href (str (:link rep) "#"
                                                        (when (:fourchan target) "p") ref))
-                               (ef/set-attr :onmouseover (str "frontend.show_popup(event, '"
+                               (ef/set-attr :data-onmouseover (str "frontend.show_popup(event, '"
                                                               ref  "', true)"))
-                               (ef/set-attr :onmouseout (str "frontend.show_popup(event, '"
+                               (ef/set-attr :data-onmouseout (str "frontend.show_popup(event, '"
                                                              ref  "', false)"))
                                (ef/html-content (str "&gt;&gt;" ref)))))
      node))))
@@ -164,7 +191,7 @@
   [thread target &{:keys [word-filter fallback?] :or {word-filter true}}]
 
   [:.expand-trigger]
-  (ef/set-attr :onclick (str "frontend.expand_thread(\""
+  (ef/set-attr :data-onclick (str "frontend.expand_thread(\"" ;!!!
                           (:internal-id thread)
                           "\")"))
   [:.image-indent]
@@ -177,7 +204,7 @@
      (ef/at node
            [:.reply]
            (mk/do-when (and (seq (:children thread)) (not (:hdlns thread)))
-                 (inject-replies (when (not fallback?) node) thread target 
+                 (inject-replies (when (not fallback?) node) thread target
                                  :word-filter word-filter))))))
     
 
@@ -195,7 +222,7 @@
      (print-index thread))))
 
 (em/deftemplate thread-stream :compiled "templates/thread-stream.html" 
-  [threads target]
+  [threads target onendclone]
   [:.expand-all-trigger]
   (mk/do-when (:xpnd target)
     (ef/set-attr :src (str io/*file-base* "empty.png")))
@@ -205,7 +232,7 @@
    (fn [node]
      (ef/at node
        [:.thread-line]
-          (mk/clone-for-live-node node 10 [th threads]
+          (mk/clone-for-live-node node 10 onendclone [th threads]
                 [:.thread-line]
                 #(cond (:onwatch th) ((ef/set-attr :onwatch "onwatch") %)
                        :else %)
@@ -220,7 +247,7 @@
                 [:.reply-btn]
                 (mk/remove-when (or (:error th) (not io/*addon*) (base/*posting-not-impl* (:trade target))))
                 [:.expand-trigger]
-                (ef/set-attr :onclick (str "frontend.expand_thread(\""
+                (ef/set-attr :data-onclick (str "frontend.expand_thread(\""
                                            (:internal-id th)
                                            "\")"))
                 [:.post-container]
@@ -228,7 +255,7 @@
                 [:.thread-header]
                 (ef/do->
                  (ef/remove-attr :style)
-                 (ef/set-attr :onclick (str "if (event.target == this) frontend.expand_thread(\""
+                 (ef/set-attr :data-onclick (str "if (event.target == this) frontend.expand_thread(\""
                                             (:internal-id th)
                                             "\")")))
                 [:.watch-trigger-disabled]
@@ -252,7 +279,7 @@
                            (if (:post-delta th) "delta-posts" "delta-posts-lazy")
                            "\""
                            (when (not (:post-delta th))
-                             "onclick=\"frontend.lazy_get_watch(this)\"")
+                             "data-onclick=\"frontend.lazy_get_watch(this)\"")
                            "title=\"Delta posts from the last visit\">&#x2206; ["
                            (if (:post-delta th) (:post-delta th) "?")
                            "]</span>"))
@@ -318,7 +345,7 @@
                 (mk/do-when (and (not (:force-text target)) (:thumb th))
                          (ef/do->
                           (ef/set-attr :href (:image th))
-                          (ef/set-attr :onclick (str "return frontend.expand_image(this,"
+                          (ef/set-attr :data-onclick (str "frontend.expand_image(this,"
                                                      (first (:image-size th)) ","
                                                      (second (:image-size th)) ")"))))
                 ;; [:.thread-oppost :> :.image-container]
@@ -361,7 +388,7 @@
    (fn [node]
      (ef/at node
        [:.stream-image-container]
-       (mk/clone-for-live-node node 5 [im images]
+       (mk/clone-for-live-node node 5 nil [im images]
                 (ef/do->
                  (ef/remove-attr :style)
                  (fn [node]
@@ -381,15 +408,17 @@
                           [:.image-link]
                           (ef/do->
                            (ef/set-attr :href (:image im))
-                           (ef/set-attr :onclick (str "return frontend.expand_image(this,"
+                           (ef/set-attr :data-onclick (str "frontend.expand_image(this,"
                                                       (first (:image-size im)) ","
                                                       (second (:image-size im)) ")"))))))))))
 
-
-(defn threads [data target]
-  (if (:img target)
-    (image-stream data target)
-    (thread-stream data target)))
+(defn threads
+      ([data target onendclone]
+        (if (:img target)
+          (image-stream data target)
+          (thread-stream data target onendclone)))
+      ([data target]
+        (threads data target nil)))
 
 (em/deftemplate frontend :compiled "templates/frontend.html" [])
 

@@ -113,7 +113,7 @@
         out))))
 
 (defn load-threads [request callback]
-  (let [{:keys [target key]} request]
+  (let [{:keys [target key end]} request]
     (cb-let [response] (io/get-pages (pp/target-pages target key))
       (if (= (:state response) "ok") 
         (let [pages (:pages response)
@@ -131,7 +131,7 @@
                                                   (rest pages))))
               threads (distinct-by :internal-id threads)
               threads (if (:rev target) (reverse threads) threads)
-              return #(callback (render/threads %1 target) %2 thread-meta)
+              return #(callback (render/threads %1 target end) %2 thread-meta)
               return-fail #(callback nil nil %)]
           (if (and (:filter target) (not (seq threads)))
             ;; if the :search url option is specified and nothing was found

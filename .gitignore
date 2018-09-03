@@ -1,1 +1,8 @@
+.idea
+*.iml
+web-ext-artifacts
+.web-extension-id
+scripts/sign.bat
+scripts/setenv.bat
 /chanlist.txt
+front-hash.txt

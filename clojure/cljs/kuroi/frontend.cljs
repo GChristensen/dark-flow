@@ -4,8 +4,11 @@
 
 (ns kuroi.frontend
   (:require
+   [kuroi.io :as io]
    [kuroi.base :as base]
+   [kuroi.render :as rdr]
    [kuroi.backend :as bk]
+   [kuroi.page-parser :as pp]
    [kuroi.settings :as opts]
 
    [clojure.string :as str]
@@ -41,15 +44,13 @@
 
 (def *expand-counter* (atom 0))
 
-(def ^:const forget-trigger "<a class=\"forget-trigger\" onclick=\"frontend.forget_thread(this)\"  
-			                 title=\"Forget thread\">&#x00d7;</a>")
+(def ^:const forget-trigger "<a class=\"forget-trigger\" title=\"Forget thread\">&#x00d7;</a>")
 (def ^:const empty-set "<div class=\"prohibit\">&#x20e0;</div>")
 (def ^:const error-loading-page "<div class=\"prohibit load-indicator\">Error loading page</div>")
 (def ^:const the-list-is-empty "<div class=\"load-indicator\">The list is empty</div>")
 
 (def *theme*)
 (def *addon*)
-(def *protocol*)
 (def *file-base*)
 (def loading-post)
 (def service-loading)
@@ -174,8 +175,7 @@
     (if (string? stats)
       stats
       (str (when (not (or (:img target) (not *addon*) (base/*posting-not-impl* (:trade target))))
-             "<a class=\"new-thread\" title=\"New thread\" style=\"cursor: pointer !important;\"
-                      onclick=\"frontend.show_reply_form(this, true)\">+</a>&nbsp;")
+             "<a class=\"new-thread\" title=\"New thread\" style=\"cursor: pointer !important;\">+</a>&nbsp;")
            "<a target=\"_blank\" class=\"board-link\" href=\"" (:target target) "\">"
            (:trade target) "/" (:board target) "</a>&nbsp;"
            (if (:img target) "images" "threads")
@@ -185,6 +185,7 @@
            "]"))))
 
 (defn insert-threads [threads &{:keys [meta]}]
+
   (let [t-h (dom/getElement "thread-headlines")
         err-msg (if (:error meta)
                   (:error meta)
@@ -196,6 +197,8 @@
             (set! (.-src i) (themed-image (.getAttribute i "src")))))
         (.removeChild t-h (.-firstChild t-h))
         (.appendChild t-h threads)
+        (let [new-thread-elts (.querySelectorAll js/document ".new-thread")]
+             (.forEach new-thread-elts #(set! (.-onclick %) (fn [] (show-reply-form % true)))))
         #_(let [loading-line (.querySelector t-h ".thread-line")]
           (.removeChild loading-line (.-patentNode loading-line))))
       (set! (.-innerHTML t-h) err-msg))
@@ -203,11 +206,15 @@
       (js/alert (:alert meta)))))
 
 (defn append-threads [threads &{:keys [hide-indicator]}]
+      (.log js/console "appending")
   (when hide-indicator
     (when-let [loading-thread (.querySelector threads ".loading-thread")]
       (hide-elt loading-thread)))
+
   (let [t-h (dom-get-element "thread-headlines")]
-    (.appendChild t-h threads)))
+    (.appendChild t-h threads)
+    (let [new-thread-elts (.querySelectorAll js/document ".new-thread")]
+      (.forEach new-thread-elts #(set! (.-onclick %) (fn [] (show-reply-form % true)))))))
 
 (defn set-events [el events]
   (doseq [[k v] events]
@@ -294,7 +301,7 @@
                        (get-target thread-line))
                  *target*)
         target (assoc target :img true :inline true)
-        iframe-link (str *protocol* ":images?target=" (js/encodeURI (pr-str target))
+        iframe-link (str (get-base-url) "?images&target=" (js/encodeURI (pr-str target))
                          "&thread-id=" (.-textContent thread-no))
         title (str "<a class=\"title-link\" target=\"_blank\" href=\"" thread-link "\">" 
                    thread-link "</a>")]    
@@ -304,7 +311,7 @@
   (let [video-id (second (re-find #".*ytimg.com/[^/]+/([^/]+)/" video-pic ))
         url (when video-id (str "http://youtube.com/embed/" video-id "?autoplay=1"))]
     (when url
-      (inline-dialog "Video" (str *protocol* ":video?video=" (js/encodeURIComponent url))))))
+      (inline-dialog "Video" (str (get-base-url) "?video?video=" (js/encodeURIComponent url))))))
 
 ;; post image expansion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -455,9 +462,15 @@
                                          "id" (str "popup-" post),
                                          "innerHTML" (if node "<div/>" loading-post)})]
                        (.appendChild (.-body js/document) popup-elt)
+                       (let [links (.querySelectorAll popup-elt "a[data-onmouseover")]
+
+                            (.forEach links #(do (.log js/console %)
+                                               (set! (.-onmouseover %) (fn [event] (show-popup event, post, true)))
+                                                 (set! (.-onmouseout %) (fn [event] (show-popup event, post, false))))))
                        (when node
                          (let [reply-elt (.cloneNode node true)
                                oppost-text (child-by-class reply-elt "oppost-text")]
+                              (rdr/replace-events reply-elt)
                            (when oppost-text
                              (set! (.-maxHeight (.-style oppost-text)) "none"))
                            (.removeChild popup-elt (.-firstChild popup-elt))
@@ -546,7 +559,8 @@
       (js/setTimeout #(lazy-get-watch element watch-stream?) 2000))))
 
 (defn ^:export expand-thread [post-id expand? &{:keys [mass]}]
-  (let [post (dom-get-element post-id)
+  (let [
+        post (dom-get-element post-id)
         thread-headlines (dom-get-element "thread-headlines")
         thread-line (parent-by-class post "thread-line")
         target (get-target thread-line)
@@ -606,7 +620,9 @@
             (set! (.-title element) "Watch thread")
             (if (not *target*)
               (set! (.-innerHTML service-pane) "")
-              (set! (.-innerHTML service-pane) forget-trigger))
+              (do (set! (.-innerHTML service-pane) forget-trigger)
+                  (let [trigger (child-by-class service-pane "forget-trigger")]
+                     (set! (.-onclick trigger) #(forget-thread trigger)))))
             (.removeAttribute element "onwatch")
             (set! (.-onwatch element) nil))
           (set! (.-innerHTML service-pane) empty-set)))
@@ -698,7 +714,7 @@
     (set! *target* target)
     (if  *target*
       (do 
-        (load-external (str "http://" (:trade *target*) "/favicon.ico") "ico")
+;        (load-external (str "http://" (:trade *target*) "/favicon.ico") "ico")
         (set! (.-innerHTML (dom-get-element "thread-list-caption") )
               (str "<b>" (:trade target) "</b> board chain"))
         (cb-let [threads stats meta] (bk/load-threads {:target target :key :pages})
@@ -727,7 +743,7 @@
           (load-css *theme* "flags-4chan.css"))
         (if *target*
           (let [target (assoc *target* :subsequent subsequent)] 
-            (load-external (str "http://" (:trade target) "/favicon.ico") "ico")
+;            (load-external (str "http://" (:trade target) "/favicon.ico") "ico")
             (set! (.-innerHTML (dom-get-element "thread-list-caption"))
                   (str "Loading " (pages target)
                        (if (not= (pages target) 1)
@@ -770,22 +786,25 @@
                    #(expand-thread (.-id %) expand? :mass true))
     (show-elt nav-popup "block")))
 
+(defn get-base-url[]
+      (str (.-pathname js/location)))
+
 (defn setup-snapin-buttons []
   (let [s-btn (dom-get-element "settings-btn")]
     (events/listen s-btn
                    goog.events.EventType/CLICK
-                   #(inline-dialog "Settings" (str *protocol* ":settings?target=" 
+                   #(inline-dialog "Settings" (str (get-base-url) "?settings&target="
                                                    (:trade *target*)))))
 
   (let [w-btn (dom-get-element "watch-btn")]
     (events/listen w-btn
                    goog.events.EventType/CLICK
-                   #(inline-dialog "Watch" (str *protocol* ":watch"))))
+                   #(inline-dialog "Watch" (str (get-base-url)  "?watch"))))
 
   (let [h-btn (dom-get-element "help-btn")]
     (events/listen h-btn
                    goog.events.EventType/CLICK
-                   #(inline-dialog "Help" (str *protocol* ":help"))))
+                   #(inline-dialog "Help" (str (get-base-url)  "?help"))))
 
   (when (:chain *target*)
     (set! (.-display (.-style (dom-get-element "go-again-btn"))) "none")
@@ -831,8 +850,7 @@
                                     "innerHTML" (str
                                                  "<div class=\"form-header\">
                                                     <span class=\"gold reply-to\">Reply to: </span>
-                                                    <span class=\"insertion-point\">
-                                                     &nbsp;</span>"
+                                                    <span class=\"insertion-point\">&nbsp;</span>"
                                                  service-loading
                                                  "<a class=\"form-close-btn header-btn\"
                                                       title=\"Close form\">&#x25a0;</a>
@@ -846,6 +864,9 @@
              form-clone (.cloneNode form true)
              textarea (.querySelector form-clone "textarea")
              parent-key (.-__parent_key__ form)
+             set-width (.-__set_width__ form)
+             set-height (.-__set_height__ form)
+             iframe? (.-__is_iframe__ form)
              captcha-elt (.-__captcha_elt__ form)
              captcha-attr (.-__captcha_attr__ form)
              captcha-challenge (.-__captcha_challenge__ form)
@@ -893,6 +914,11 @@
                                             (iv-load-posts element (:replies target)))))))
              ]
 
+        (when set-width
+              (set! (.-width (.-style popup-elt)) set-width))
+        (when set-height
+              (set! (.-height (.-style popup-elt)) set-height))
+
         (new goog.fx.Dragger popup-elt (.-firstChild popup-elt))
         (set! (.-_anchor popup-elt) element)
 
@@ -903,45 +929,58 @@
         (show-elt form-clone "block")
         (hide-elt load-indicator)
 
-        (when new-thread?
+        (when iframe?
+              (let [iframe (.querySelector form-clone "iframe")]
+                   (show-elt load-indicator "inline")
+                   (if new-thread?
+                     (.setAttribute (.querySelector form-clone "iframe") "src" (str (:scheme target) (:forum target)))
+                     (let [url (str (pp/html-thread-url thread-id target) "?form")]
+                          (.setAttribute iframe "src" url)))
+                   (.once io/*port* "dark-flow:post-form-iframe-loaded" #(do
+                                                                           (hide-elt load-indicator)
+                                                                           (set! (.-display (.-style iframe)) "block")))
+                   (.once io/*port* "dark-flow:post-form-iframe-submitted" #(handle-post-response {}))))
+
+
+            (when new-thread?
           (set! (.-textContent reply-to) (str "New thread in /" (:board target))))
 
         (when (not new-thread?)
-          (let [post-header (or (parent-by-class element "reply-header") thread-header)
-                post-no (or (child-by-class post-header "reply-no") thread-no)
-                post-no (.cloneNode post-no true)
-                post-id (.-textContent post-no)]
+              (let [post-header (or (parent-by-class element "reply-header") thread-header)
+                    post-no (or (child-by-class post-header "reply-no") thread-no)
+                    post-no (.cloneNode post-no true)
+                    post-id (.-textContent post-no)]
 
-            (set! (.-innerHTML element) "[=]")
-            (.insertBefore header post-no (child-by-class header "insertion-point"))
-            (set! (.-className post-no) "thread-no form-reply-no")
+                   (set! (.-innerHTML element) "[=]")
+                   (.insertBefore header post-no (child-by-class header "insertion-point"))
+                   (set! (.-className post-no) "thread-no form-reply-no")
 
-            ;; when replying to a thread, add the thread id to the form
-            (let [parent-elt (.querySelector form-clone (str "input[name='" parent-key "']"))
-;                  usercode-elt (.querySelector form-clone ".qr-usercode-input")
-                  new-parent (create-elt "input" 
-                                          {"type" "hidden"
-                                           "name" parent-key 
-                                           "value" thread-id})]
-              (when parent-elt
-                (.removeChild (.-parentNode parent-elt) parent-elt))
+                   ;; when replying to a thread, add the thread id to the form
+                   (let [parent-elt (.querySelector form-clone (str "input[name='" parent-key "']"))
+                         ;                  usercode-elt (.querySelector form-clone ".qr-usercode-input")
+                         new-parent (create-elt "input"
+                                                {"type" "hidden"
+                                                 "name" parent-key
+                                                 "value" thread-id})]
+                        (when parent-elt
+                              (.removeChild (.-parentNode parent-elt) parent-elt))
 
-              ;(if usercode-elt
-              ;  (.insertBefore form-clone new-parent usercode-elt)
-                (.appendChild form-clone new-parent));)
+                        ;(if usercode-elt
+                        ;  (.insertBefore form-clone new-parent usercode-elt)
+                        (.appendChild form-clone new-parent));)
 
             (let [post-text (str ">>" post-id "\n\n")
                   selection (.toString (.getSelection js/window))]
 
-              (if (> (.-length selection) 0)
-                (set! (.-value textarea) 
-                      (str post-text 
+              (if (and textarea (> (.-length selection) 0))
+                (set! (.-value textarea)
+                      (str post-text
                            (reduce str (map #(str ">" % "\n")
                                             (filter (complement str/blank?)
                                                     (map #(str/trim %)
                                                          (str/split selection #"\n")))))
                            "\n"))
-                (set! (.-value textarea) (str post-text))))
+                (when textarea (set! (.-value textarea) (str post-text)))))
             
             (set! (.-onmouseover post-no)
                   (fn [e]
@@ -952,15 +991,15 @@
           (set-captcha captcha-elt false)
           (set! (.-onmousedown captcha-elt) #(set-captcha (.-target %) true)))
 
-        ;; (when (:fourchan target)
-        ;;   (let [script (.createElement js/document "script")]
-        ;;     (set! (.-src script) (str "https://www.google.com/recaptcha/api.js?"
-        ;;                               "onload=reCapthca_4chan_onloadCallback&render=explicit"))
-        ;;     (.appendChild (.-head js/document) script)))
+         ;(when (:fourchan target)
+         ;  (let [script (.createElement js/document "script")]
+         ;    (set! (.-src script) (str "https://www.google.com/recaptcha/api.js?"
+         ;                              "onload=reCapthca_4chan_onloadCallback&render=explicit"))
+         ;    (.appendChild (.-head js/document) script)))
 
         (when-let [sage-box (child-by-id form-clone "sagecheckbox")]
           (let [e-mail (child-by-id form-clone "e-mail")]
-          (.setAttribute (.-parentNode sage-box) "onclick" "")
+          ;(.setAttribute (.-parentNode sage-box) "onclick" "")
           (set! (.-onclick sage-box) (fn [e]
                                        (if (.-checked (.-target e))
                                          (set! (.-value e-mail) "sage")
@@ -1013,10 +1052,11 @@
                                    (.-nextSibling (.-nextSibling element))
                                    Corner/TOP_RIGHT))
           (.setVisible popup true)
-          (.focus textarea)
-          (let [pos (.-length (.-value textarea))]
-            (set! (.-selectionStart textarea) pos)
-            (set! (.-selectionEnd textarea) pos)))))))
+          (when textarea
+            (.focus textarea)
+            (let [pos (.-length (.-value textarea))]
+              (set! (.-selectionStart textarea) pos)
+              (set! (.-selectionEnd textarea) pos))))))))
 
 ;;;;;;;;;;;;;;;;;;;
 
@@ -1029,9 +1069,11 @@
     (set! (.-src nav-img) (themed-image (.getAttribute nav-img "src")))
     (.appendChild (.-body js/document) popup-elt)
     (set! *nav-popup* (goog.ui.Popup. popup-elt))
-    (.setPosition *nav-popup* (AnchoredViewportPosition.
-                                   (dom-get-element "nav-btn")
-                                   goog.positioning.Corner/BOTTOM_LEFT))
+    (let [nav-elt (dom-get-element "nav-btn")]
+      (.setPosition *nav-popup* (AnchoredViewportPosition.
+                                     nav-elt
+                                     goog.positioning.Corner/BOTTOM_LEFT))
+      (set! (.-onclick nav-elt) (fn [event] (show-nav-popup event))))
     (.setPinnedCorner *nav-popup* goog.positioning.Corner/BOTTOM_LEFT)))
 
 (defn ^:export show_nav_popup [e]
@@ -1042,7 +1084,6 @@
 
 (defn ^:export init [opts]
   (set! *file-base* (.-file-base opts))
-  (set! *protocol* (.-protocol opts))
   (set! *addon* (.-addon opts)))
 
 (defn ^:export settings [settings]
@@ -1152,7 +1193,7 @@
                      goog.ui.Component.EventType/ACTION
                      go-btn-handler))))
 
-(defn ^:export main [settings url]
+(defn ^:export front [settings url]
 ;;;;;
 ;;  (repl/connect "http://localhost:9000/repl")
 ;;;;;

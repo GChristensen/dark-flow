@@ -1,20 +1,17 @@
 <div>
   <table class="thread-stream" cellpadding="0" cellspacing="0" border="0">
-   <thead>
 	<tr class="group-line">
 	  <td colspan="2" class="thread-group normal-weight"></td>
 	</tr>
-   </thead> 
-   <tbody>
 	<tr class="thread-line">
 	  <td class="thread-control" style="display: none;">
 		&nbsp;<a class="expand-trigger header-exp" title="Expand thread">&raquo;</a>
 		<div class="control-buttons">
-		  <p><a class="watch-trigger-disabled" onclick="frontend.watch_thread(this)" 
+		  <p><a class="watch-trigger-disabled" data-onclick="frontend.watch_thread(this)"
 				title="Watch thread">&#x2606;</a></p>
 		  <div class="service-pane-container">
 			<p class="service-pane">
-			  <a class="forget-trigger" onclick="frontend.forget_thread(this)"
+			  <a class="forget-trigger" data-onclick="frontend.forget_thread(this)"
 				 title="Hide thread">&#x00d7;</a>
 			</p>
 		  </div>
@@ -26,26 +23,26 @@
 			<img class="flag" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAB3RJTUUH3gkWDhMWAydkBAAAAAlwSFlzAAAewQAAHsEBw2lUUwAAAARnQU1BAACxjwv8YQUAAAALSURBVHjaY2AAAgAABQAB6frc2AAAAABJRU5ErkJggg=="/>&nbsp;
 			No.&nbsp;<a class="thread-no reply-no" target="_blank"></a>
 			&nbsp;<a class="inline-view-trigger header-btn" title="Inline view" 
-        			 onclick="frontend.inline_view_thread(this)">&#x274F;</a>
-			<a class="delta-link header-btn" target="_blank" onclick="return frontend.inline_view_reflink(this)" 
+        			 data-onclick="frontend.inline_view_thread(this)">&#x274F;</a>
+			<a class="delta-link header-btn" target="_blank" data-onclick="frontend.inline_view_reflink(this)"
 			   title="Inline view delta">&#x2206;</a>
             <a class="inline-view-trigger header-btn inline-images-btn" title="Thread images"
-			   onclick="frontend.show_thread_images(this, true)">i</a>
-			<!--a class="iv-trigger-menu header-btn" onclick="frontend.iv_show_menu(this)" 
+			   data-onclick="frontend.show_thread_images(this, true)">i</a>
+			<!--a class="iv-trigger-menu header-btn" data-onclick="frontend.iv_show_menu(this)"
 			   title="Integrated view">++</a-->
             <div class="iv-border">
-			  <a class="iv-trigger header-btn" onclick="frontend.iv_load_posts(this, -1)" 
+			  <a class="iv-trigger header-btn" data-onclick="frontend.iv_load_posts(this, -1)"
 			     title="Integrated view (all)">&#x2193;</a>
-    		  <a class="iv-trigger header-btn" onclick="frontend.iv_load_posts(this, 100)" 
+    		  <a class="iv-trigger header-btn" data-onclick="frontend.iv_load_posts(this, 100)"
 			     title="Integrated view (100)">10&#xb2;</a>
-			  <a class="iv-trigger header-btn" onclick="frontend.iv_load_posts(this, 50)" 
+			  <a class="iv-trigger header-btn" data-onclick="frontend.iv_load_posts(this, 50)"
 			     title="Integrated view (50)">50</a>
-			  <a class="iv-trigger header-btn" onclick="frontend.iv_load_posts(this, 10)" 
+			  <a class="iv-trigger header-btn" data-onclick="frontend.iv_load_posts(this, 10)"
 			     title="Integrated view (10)">10</a>
-			  <a class="iv-trigger iv-delta header-btn" onclick="frontend.iv_load_posts(this, -2)" 
+			  <a class="iv-trigger iv-delta header-btn" data-onclick="frontend.iv_load_posts(this, -2)"
 			     title="Integrated view (&#x2206;)">&#x2206;</a>
             </div>
-            &nbsp;<a class="header-btn reply-btn" onclick="frontend.show_reply_form(this);" 
+            &nbsp;<a class="header-btn reply-btn" data-onclick="frontend.show_reply_form(this);"
 			     title="Reply">[+]</a>
 			<span class="post-count" title="Post count"></span>
 			<span class="thread-title"></span>
@@ -69,8 +66,8 @@
 				  <img class="flag"/>&nbsp;
 				  No.&nbsp;<a class="reply-no" target="_blank"></a>
 				  &nbsp;<a class="inline-view-trigger header-btn" title="Inline view" 
-					   onclick="frontend.inline_view_thread(this)">&#x274F;</a>
-                  &nbsp;<a class="header-btn reply-btn" onclick="frontend.show_reply_form(this);" 
+					   data-onclick="frontend.inline_view_thread(this)">&#x274F;</a>
+                  &nbsp;<a class="header-btn reply-btn" data-onclick="frontend.show_reply_form(this);"
  			        title="Reply">[+]</a>
                   <span class="reply-ord"></span>
 				  &nbsp;<span class="reply-title"></span>
@@ -85,19 +82,18 @@
                 </div>
 				<div class="crossref-container">
                   <span class="crossref-wrap">
-				    <a class="crossref" target="_blank" onclick="return frontend.inline_view_reflink(this)"></a>
+				    <a class="crossref" target="_blank" data-onclick="frontend.inline_view_reflink(this)"></a>
                   </span>
 				</div>
 				<div class="clear"/>
 			  </div>
 			</div>
+			<div class="collapse-bar"><a class="expand-trigger" title="Collapse thread">Collapse</a></div>
 		  </div>
-         <div class="collapse-bar"><a class="expand-trigger" title="Collapse thread">Collapse</a></div>
 		</div>
-		<img class="lazy-load-trigger" onload="frontend.lazy_get_watch(this)"/>
+		<img class="lazy-load-trigger" data-onload="frontend.lazy_get_watch(this)"/>
 	  </td>
 	</tr>
-   </tbody> 
   </table>
   <!-- img class="expand-all-trigger" onload="frontend.expand_btn_handler(event)"/-->
 </div>

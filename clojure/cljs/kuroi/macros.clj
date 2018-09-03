@@ -61,10 +61,10 @@
            (when-let [~sym (first lst#)]
              (ef/at div# (ef/append (. pnod# (~(symbol "cloneNode") true))))
              (ef/at (goog.dom/getLastElementChild div#) ~@forms)
+             (kuroi.render/replace-events div#)
              (if (next lst#)
                (js/setTimeout #(breaker# (rest lst#)) 1)
                (do
-                 (ef/log-debug div#)
                  (ef/at
                   pnod#
                   (ef/do-> (ef/after (ef/remove-node-return-child div#))
@@ -72,7 +72,7 @@
          ~lst))))
 
 ;; if not fallbac, acts on live node, mimics clone-for otherwise
-(defmacro clone-for-live-node [live-node window [sym lst] & forms]
+(defmacro clone-for-live-node [live-node window onendclone [sym lst] & forms]
   `(fn [pnod#]
      (let [div# ~live-node
            fallback# (not div#)
@@ -94,6 +94,7 @@
                     (let [clone# (. pnod# (~(symbol "cloneNode") true))]
                       (ef/at hidden# (ef/append clone#))
                       (ef/at (goog.dom/getLastElementChild hidden#) ~@forms)
+                      (kuroi.render/replace-events clone#)
                       (let [que# (if (and (not fallback#) (> (count que#) wnd#))
                                    (do (show-nodes# (seq que#) div#)
                                        (conj cljs.core.PersistentQueue/EMPTY clone#))
@@ -101,17 +102,18 @@
                         (if (next lst#)
                           (js/setTimeout #(breaker# (rest lst#) que#)
                                          1)
-                          (if fallback#
-                            (do (ef/log-debug div#)
-                                (ef/at
-                                 pnod#
-                                 (ef/do-> (ef/after (ef/remove-node-return-child div#))
-                                          (ef/remove-node))))
-                            (do (show-nodes# (seq que#) div#)
-                                (ef/at
-                                 hidden#
-                                 (ef/remove-node)))
-                            ))))))
+                          (do
+                            (if fallback#
+                              (do (ef/at
+                                   pnod#
+                                   (ef/do-> (ef/after (ef/remove-node-return-child div#))
+                                            (ef/remove-node))))
+                              (do
+                                  (show-nodes# (seq que#) div#)
+                                  (ef/at
+                                   hidden#
+                                   (ef/remove-node)))
+                              )))))))
                 ~lst cljs.core.PersistentQueue/EMPTY)))]
        (if (not fallback#)
          (js/setTimeout do-clone# 10)

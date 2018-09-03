@@ -69,7 +69,7 @@
                     (assoc reply 
                       :text (str "<span class='red'>Cut by wordfilter 
                                  (<a class=\"red wf-trigger\" 
-                                     onclick=\"frontend.iv_expand_post(this, '" 
+                                     data-onclick=\"frontend.iv_expand_post(this, '"
                                      (str (:link reply) "#" (when (:fourchan target) "p") 
                                           (:id reply))
                                       "')\">view</a>)</span>")
