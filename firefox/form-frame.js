@@ -1,4 +1,4 @@
-if (location.search && location.search.endsWith("#form")) {
+if (location.hash && location.hash.startsWith("#form")) {
     let form = document.body.querySelector("form[name='post']");
     if (form) {
         document.body.innerHTML = "";
@@ -19,10 +19,12 @@ if (location.search && location.search.endsWith("#form")) {
         }
         document.body.appendChild(form);
 
-        let newScript = document.createElement('script');
-        newScript.setAttribute("async", "false");
-        newScript.innerHTML = 'initRecaptcha()';
-        document.head.appendChild(newScript);
+        setTimeout(() => {
+            let newScript = document.createElement('script');
+            newScript.setAttribute("async", "false");
+            newScript.innerHTML = 'initRecaptcha()';
+            document.head.appendChild(newScript);
+        }, 1000);
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();

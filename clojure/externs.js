@@ -1,7 +1,7 @@
-var port = {}; 
-port.on = function () {};
-port.once = function () {};
-port.emit = function () {};
+var IOPort = {};
+IOPort.on = function () {};
+IOPort.once = function () {};
+IOPort.emit = function () {};
 
 var opts = {};
 opts.file_base = {};
@@ -15,5 +15,5 @@ var payload = {};
 payload.id = {};
 payload.values = {};
 
-var href = {};
-href.endsWith = function () {};
+var we = {};
+we._event = {};

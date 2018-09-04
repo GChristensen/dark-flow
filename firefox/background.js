@@ -5,3 +5,13 @@ function openBoard() {
 }
 
 browser.browserAction.onClicked.addListener(openBoard);
+
+browser.runtime.onMessage.addListener(msg => {
+    console.log("dark-flow runtime message");
+    console.log(msg);
+   switch (msg.message) {
+       case "dark-flow:follow-url":
+           //window.location.href = "?front&url=" + encodeURI(msg.url);
+           break;
+   }
+});

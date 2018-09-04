@@ -1,3 +1,4 @@
+
 window.addEventListener("load", () => {
 
     browser.storage.local.get(null, (bootstrap_settings) => {

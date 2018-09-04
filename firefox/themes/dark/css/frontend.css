@@ -5,6 +5,10 @@ body, html
     cursor: auto;
 }
 
+/*body {
+	display: none !important;
+}*/
+
 #header
 {
 	height: 64px;
@@ -798,4 +802,10 @@ input[name="recaptcha_response_field"]
 #rules_row
 {
     display: none;
+}
+
+#address-btn-container {
+	display: inline-block;
+	float: left;
+	padding-top: 4px;
 }

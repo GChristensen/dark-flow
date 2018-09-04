@@ -135,11 +135,6 @@ input[type="text"]
 {
     font-size: 200%;
 }
-
-#content {
-	display: none
-}
-
 .branding-container {
 	display: flex;
 }

@@ -28,7 +28,7 @@ dispatch.init = function(bootstrap_settings)
         file_base: "",
         addon: true,
         entry_point: entry_point,
-        resource: resource
+        resource: entry_point === "urlbar"? bootstrap_settings.last_url: resource
     };
 
     // sic!
@@ -120,9 +120,24 @@ function dispatch_messages(msg, data, callback)
                   console.log("theme stored")
                   console.log(theme)
 
+                  browser.storage.local.get(null, )
                   browser.storage.local.set({theme: theme});
               }
           });
+        break;
+    case "url-followed":
+        browser.storage.local.set({last_url: data});
+        break;
+    case "follow-url":
+        console.log("following");
+        console.log(data);
+        if (data.parent) {
+            data.message = "follow-url";
+            data.parent = false;
+            window.parent.postMessage(data, "*");
+        }
+        else
+            location.href = data.url;
         break;
     case "dark-flow:post-form-iframe-submitted":
     case "dark-flow:post-form-iframe-loaded":
@@ -132,6 +147,10 @@ function dispatch_messages(msg, data, callback)
 }
 
 // background script message handling /////////////////////////////////////////
+
+window.addEventListener("message", (event) => {
+    gport.emit(event.data.message, event.data);
+});
 
 browser.runtime.onMessage.addListener (msg => {
     gport.emit(msg.message, msg);

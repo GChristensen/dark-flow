@@ -145,8 +145,13 @@
       "css" (let [elt (.createElement js/document "link")]
               (set! (.-rel elt) "stylesheet")
               (set! (.-type elt) "text/css")
+              (.setAttribute elt "async" "false")
               (set! (.-href elt) filename)
-              (append elt))
+              (append elt)
+           ;; TODO add callback parameter for load to move body style into macros.clj
+           (.addEventListener elt "load" #(when
+                                            (.endsWith filename "closure.css")
+                                                (set! (.-display (.-style (.-body js/document))) "block"))))
       "ico" (let [elt (.createElement js/document "link")]
               (set! (.-rel elt) "icon")
               (set! (.-href elt) filename)
@@ -157,14 +162,14 @@
   (load-external (str *file-base* "themes/" theme "/css/" filename) "css"))
  
 (defn load-styles [theme &{:keys [settings]}]
-  (load-css theme "main.css")
-  (load-css theme "closure.css")
   (let [ua (str/lower-case (.-userAgent js/navigator))]
     (if (or (s-in? ua "android") (s-in? ua "mobile"))
       (load-css theme "mobile.css")))
   (if settings
     (load-css theme "settings.css")
-    (load-css theme "frontend.css")))
+    (load-css theme "frontend.css"))
+  (load-css theme "main.css")
+  (load-css theme "closure.css"))
 
 (defn format-stats [stats target]  
   (let [shown (if (:img target) (:shown stats) (+ (:shown stats) (:watch stats)))
@@ -790,7 +795,13 @@
       (str (.-pathname js/location)))
 
 (defn setup-snapin-buttons []
+  (let [a-btn (dom-get-element "follow-btn")]
+       (events/listen a-btn
+                      goog.events.EventType/CLICK
+                      #(inline-dialog "Follow" (str (get-base-url) "?urlbar#frame"))))
+
   (let [s-btn (dom-get-element "settings-btn")]
+       (.log js/console s-btn)
     (events/listen s-btn
                    goog.events.EventType/CLICK
                    #(inline-dialog "Settings" (str (get-base-url) "?settings&target="
@@ -933,7 +944,7 @@
               (let [iframe (.querySelector form-clone "iframe")]
                    (show-elt load-indicator "inline")
                    (if new-thread?
-                     (.setAttribute (.querySelector form-clone "iframe") "src" (str (:scheme target) (:forum target)))
+                     (.setAttribute (.querySelector form-clone "iframe") "src" (str (:scheme target) (:forum target) "#form"))
                      (let [url (str (pp/html-thread-url thread-id target) "#form")]
                           (.setAttribute iframe "src" url)))
                    (.once io/*port* "dark-flow:post-form-iframe-loaded" #(do
@@ -1167,18 +1178,22 @@
     (let [manual (.querySelector js/document "#manual")]
       (set! (.-src manual) (file-base (.getAttribute manual "src"))))))
 
-(defn ^:export urlbar [settings]
-  (with-page urlbar [settings]   
+(defn ^:export urlbar [settings url]
+  (with-page urlbar [settings]
 
-    (let [address-txt (dom-get-element "address-txt")
+    (let [hash (.-hash js/location)
+          frame? (when hash (.startsWith hash "#frame"))
+          address-txt (dom-get-element "address-txt")
           go-btn (goog.ui/decorate (dom-get-element "go-btn"))
           go-btn-handler (fn [e]
                            (when (not (str/blank? (.-value address-txt)))
-                             (set! (.-location js/window)
-                                   (str "?front&url=" (.-value address-txt)
-                                        (when (.-checked (dom-get-element "text-only"))
-                                          ":txt")))))]
-         (.focus address-txt)
+                             (let [loc (.-value address-txt)
+                                   loc (str "?front&url=" (if (> (.indexOf loc "://") 0) loc (str "chan://" loc))
+                                            (when (.-checked (dom-get-element "text-only"))
+                                                  ":txt"))]
+                                 (.emit io/*port* "follow-url" (js-obj "url" loc "parent" frame?)))))]
+      (when url (set! (.-value address-txt) url))
+      (.focus address-txt)
       (events/listen address-txt
                      goog.events.EventType/KEYPRESS
                      (fn [e]
@@ -1193,7 +1208,7 @@
 ;;  (repl/connect "http://localhost:9000/repl")
 ;;;;;
   (set! *resource* url)
-
+  (.emit io/*port* "url-followed" url)
   (with-page frontend [settings]
     (setup-snapin-buttons)
     (setup-nav-popup)

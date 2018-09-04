@@ -8,5 +8,4 @@ all:
 
 clean:
 	rm -r ./target
-	rm ./frontend.js
-	rm ../firefox/engine/frontend.js
+	rm ../firefox/engine.js

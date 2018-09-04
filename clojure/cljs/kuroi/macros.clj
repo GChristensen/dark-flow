@@ -18,6 +18,7 @@
      (~'setup-themed-vars (:theme ~'settings))
      (cookies/remove "theme")
      (cookies/set "theme" (:theme ~'settings) 31557600 "/")
+           (set! (.-display (.-style (.-body js/document))) "none")
      (.appendChild (.-body js/document) (.querySelector html# "#content"))
      (~'load-styles (:theme ~'settings) ~@(if (= page 'settings) [:settings true] []))
      ~@body))
