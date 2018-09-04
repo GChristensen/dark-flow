@@ -1,3 +1,5 @@
+/*.clj*~
+/*.clj*#
 .idea
 *.iml
 web-ext-artifacts

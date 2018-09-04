@@ -26,8 +26,6 @@ dispatch.init = function(bootstrap_settings)
     let opts = {
         port: gport,
         file_base: "",
-        protocol: "chan://",
-        scheme: "chan",
         addon: true,
         entry_point: entry_point,
         resource: resource

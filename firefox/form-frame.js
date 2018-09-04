@@ -1,4 +1,4 @@
-if (location.search && location.search.endsWith("?form")) {
+if (location.search && location.search.endsWith("#form")) {
     let form = document.body.querySelector("form[name='post']");
     if (form) {
         document.body.innerHTML = "";

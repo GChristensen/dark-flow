@@ -934,7 +934,7 @@
                    (show-elt load-indicator "inline")
                    (if new-thread?
                      (.setAttribute (.querySelector form-clone "iframe") "src" (str (:scheme target) (:forum target)))
-                     (let [url (str (pp/html-thread-url thread-id target) "?form")]
+                     (let [url (str (pp/html-thread-url thread-id target) "#form")]
                           (.setAttribute iframe "src" url)))
                    (.once io/*port* "dark-flow:post-form-iframe-loaded" #(do
                                                                            (hide-elt load-indicator)
@@ -990,12 +990,6 @@
           (set! (.-cursor (.-style captcha-elt)) "pointer")
           (set-captcha captcha-elt false)
           (set! (.-onmousedown captcha-elt) #(set-captcha (.-target %) true)))
-
-         ;(when (:fourchan target)
-         ;  (let [script (.createElement js/document "script")]
-         ;    (set! (.-src script) (str "https://www.google.com/recaptcha/api.js?"
-         ;                              "onload=reCapthca_4chan_onloadCallback&render=explicit"))
-         ;    (.appendChild (.-head js/document) script)))
 
         (when-let [sage-box (child-by-id form-clone "sagecheckbox")]
           (let [e-mail (child-by-id form-clone "e-mail")]

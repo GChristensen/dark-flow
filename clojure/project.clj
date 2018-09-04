@@ -25,7 +25,7 @@
      :builds [{:source-paths ["cljs"]
                :compiler 
                {;:main 'kuroi.frontend
-                :output-to "frontend.js"
+                :output-to "../firefox/engine.js"
                 :optimizations :advanced
                 :externs ["externs.js"]
                 :pretty-print false
@@ -37,7 +37,7 @@
     :cljsbuild {
      :builds [{:source-paths ["cljs"]
                :compiler 
-               {:output-to "../firefox/frontend.js"
+               {:output-to "../firefox/engine.js"
                 :optimizations :whitespace ;:advanced
                 :externs ["externs.js"]
                 :pretty-print true;false
