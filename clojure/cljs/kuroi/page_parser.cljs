@@ -501,7 +501,7 @@
                       #(re-matches #"/[^/]+/" (.getAttribute % "href"))
                       #(let [l (.getAttribute % "href")]
                          (set! (.-textContent %) l)
-                         (set! (.-href %) (str (:orig-scheme target) (:domain target)
+                         (set! (.-href %) (str "?front&url=" (:orig-scheme target) "://" (:domain target)
                                                (.substring l 0 (.lastIndexOf l "/"))))
                          %))))
 
@@ -512,7 +512,7 @@
       (transform-navbar dom target (seq (.-childNodes navbar-elt))
                         #(re-matches #"/?[a-zA-Z0-9-]+/?(index\.x?html)?" (.-href %))
                         #(let [l (.getAttribute % "href")]
-                           (set! (.-href %) (str (:orig-scheme target) (:domain target)
+                           (set! (.-href %) (str "?front&url=" (:orig-scheme target) "://" (:domain target)
                                                  (if (= (first l) "/")
                                                    (if (s-in? l "index")
                                                      (.substring l 0 (.lastIndexOf l "/"))

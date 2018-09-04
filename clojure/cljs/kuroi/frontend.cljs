@@ -1175,9 +1175,10 @@
           go-btn-handler (fn [e]
                            (when (not (str/blank? (.-value address-txt)))
                              (set! (.-location js/window)
-                                   (str "/_/" (.-value address-txt)
+                                   (str "?front&url=" (.-value address-txt)
                                         (when (.-checked (dom-get-element "text-only"))
                                           ":txt")))))]
+         (.focus address-txt)
       (events/listen address-txt
                      goog.events.EventType/KEYPRESS
                      (fn [e]

@@ -3,7 +3,9 @@ if (location.search && location.search.endsWith("#form")) {
     if (form) {
         document.body.innerHTML = "";
 
-        form.querySelector("#postForm").setAttribute("style", "display: block !important");
+        let postForm = form.querySelector("#postForm");
+        if (postForm)
+            postForm.setAttribute("style", "display: block !important");
         let captcha_line = form.querySelector("#captchaFormPart");
 
         if (captcha_line) {
@@ -41,7 +43,6 @@ if (location.search && location.search.endsWith("#form")) {
                 `;
             document.head.appendChild(newScript);
         });
-
 
         window.addEventListener('message', function(event) {
             if (event.data && event.data.message === "dark-flow:post-form-iframe-loaded") {

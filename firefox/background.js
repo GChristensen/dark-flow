@@ -1,6 +1,6 @@
 function openBoard() {
    browser.tabs.create({
-     "url": "board.html"
+     "url": "flow.html"
    });
 }
 

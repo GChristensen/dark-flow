@@ -38,7 +38,7 @@
   } 
   </style>
 
-  <script type="text/javascript" class="uncompiled-script" src="js/goog/base.js"></script>
+  <!--script type="text/javascript" class="uncompiled-script" src="js/goog/base.js"></script>
   <script type="text/javascript" src="js/mobile.js"></script>	
   <script type="text/javascript" src="js/utils/utils.js"></script>	
   <script type="text/javascript">
@@ -52,38 +52,67 @@
 
   <script type="text/javascript" class="uncompiled-script">
     goog.require('mobile');
-  </script>
+  </script-->
 
 </head>
 
 <body>
   <div id="content" class="tab-content">
 	<div id="tabs">
-      <div id="thread-tabs_content" class="tab-thread-tabs_content goog-tab-content">
+      <div id="thread-tabs_content" class="tab-thread-tabs_content goog-tab-content vh-centered">
         <div class="science-stream">
+          <div class="mobile-controls branding-container" style="margin-top: 0">
+            <img src="icons/icon-64.png"/>&nbsp;
+            <span class="branding-title">DARK FLOW</span>
+          </div>
           <div class="mobile-controls black">
-            <!--div style="float: left; margin-right: 10px; padding-top: 3px;"><img src="/images/fav.png"/></div-->
-            <!--div id="cbx-chan" style="float: left; margin-right: 10px;"></div>
-            <div id="cbx-board" style="float: left; margin-right: 10px;"></div>
-            <div id="cbx-pages" style="float: left; margin-right: 20px;"></div-->
-            <input id="address-txt" type="text" style="float: left; width: 380px;" />
-            <!--div id="up-btn" class="gold goog-flat-button" style="float: left; height: auto; top: -6px; margin-right: 10px;">&#x25b2;</div>
-            <div id="up-btn" class="gold goog-flat-button" style="float: left; height: auto; top: -6px; margin-right: 20px;">&#x25bc;</div-->
+            <input id="address-txt" class="gold" type="text" style="float: left; width: 380px;"  autofocus/>
             <div id="go-btn" class="gold goog-flat-button" style="height: auto; top: -2px;">Go</div>
-            <div style="margin-top: 10px; padding-left: 20px;">
+            <div style="margin-top: 10px; padding-left: 20px; display: none;">
               <span class="gold">
                 <input type="checkbox" id="text-only"></input>
                 <label for="text-only">Text only</label>
               </span>
             </div>
-            <!--div id="chan-selector" class="mobile-selector"></div>
-            <div id="board-selector" class="mobile-selector"></div>
-            <div id="option-selector" class="mobile-selector"></div-->
+          </div>
+          <div class="mobile-controls gray-border" style="width: 650px; padding: 5px">
+            Enter a forum address with colon-separated options, for example: <span class="gold">chan://4chan.org/a:10p:5r:rev</span><br>
+            The following options are available (all the options are optional):
+            <table style="margin-top: 5px">
+              <tr>
+                <td style="width: 400px">
+                  <span class="gold">Np</span> - take N pages on the initial forum load (the default is 5)<br>
+                  <span class="gold">Nr</span> - take N pages on a refresh (the default is 2)<br>
+                  <span class="gold">Nv</span> - take N last (visible) replies from a thread (the default is 3)<br>
+                  <span class="gold">txt</span> - text only (do not display images)<br>
+                  <span class="gold">hdlns</span> - display opposts only<br>
+                  <span class="gold">img</span> - show an image stream instead of a thread list (limited support)<br>
+                  <span class="gold">sortid</span> - sort threads by id (desc)<br>
+                  <span class="gold">rev</span> - reverse (show the oldest threads first)<br>
+                  <span class="gold">search(text)</span> - show only threads which contain the specified text in the op-post title or message<br>
+                  <span class="gold">deep</span> - also search in the visible posts new - show only new threads or threads with new posts
+                </td>
+                <td style="vertical-align: top;">
+                  Chained links allow to simultaneously view multiple boards in one tab, for example, the link: <span class="gold">4chan.org/[a:3p,c,m:2p]:5p</span> will take 3 pages from the board /a. 5 pages from the board /с and two pages from the board /m.
+                </td>
+              </tr>
+            </table>
           </div>
         </div>
 	  </div>
     </div>
   </div>
+
+  --------------------------------------------------------------------------1------------------------
+  Enter a forum address with colon-separated options, for example: chan://4chan.org/a: 10p:5r:rev The options are (all the options are optional):
+  Np - take N pages on the initial forum load (the default is 5)
+  Nr - take N pages on a refresh (the default is 2)
+  Nv - take N last (visible) replies from a thread (the default is 3) txt - text only (do not display images)
+  hdlns - display opposts only	•—
+  img - show an image stream instead of a thread list (limited support) sortid - sort threads by id (desc) rev - reverse (show the oldest threads first)
+  search(text) - show only threads which contain the specified text in the op-post title or message deep - also search in the visible posts new - show only new threads or threads with new posts
+  Chained links allow to simultaneously view multiple boards in one tab, for example, the link: 4chan.org/[a:3p,c,m:2p]:5p will take 3 pages from the board /a. 5 pages from the board /с and two pages from the board /m.
+  Additional links: chan:settings - addon settings chan:wach - the watch list
 
 
 </body>

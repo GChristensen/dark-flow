@@ -11,7 +11,7 @@ let dispatch = {};
 dispatch.init = function(bootstrap_settings)
 {
     let search = window.location.search;
-    let entry_point = "front";
+    let entry_point = "urlbar";
     let resource = "";
 
     if (search && search.length > 1) {

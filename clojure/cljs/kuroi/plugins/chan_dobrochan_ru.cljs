@@ -37,7 +37,7 @@
                              #(when-let [href (.getAttribute % "href")]
                                         (re-matches #"/[a-zA-Z0-9-]+/index.xhtml" href))
                              #(let [l (.getAttribute % "href")]
-                                   (set! (.-href %) (str (:orig-scheme target) (:domain target)
+                                   (set! (.-href %) (str "?front&url=" (:orig-scheme target) "://" (:domain target)
                                                          (.substring l 0 (.lastIndexOf l "/"))))
                                    %))))
 

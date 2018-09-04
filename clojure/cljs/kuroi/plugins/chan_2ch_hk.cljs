@@ -38,6 +38,9 @@
 (defmethod pp/thread-url +trademark+ [thread-id target]
   (str (:scheme target) (:forum target) "/res/" thread-id ".json"))
 
+(defmethod pp/html-thread-url +trademark+ [thread-id target]
+  (str (:scheme target) (:forum target) "/res/" thread-id ".html"))
+
 (defmethod pp/parse-post +trademark+ [root-node data target]
   (let [post-id (root-node "num")
        post-text (pp/fix-links (pp/sanitize (root-node "comment")) target)
@@ -79,30 +82,29 @@
   (pp/select dom "form#postform"))
 
 (defmethod pp/extract-navbar +trademark+ [dom target]
-  (pp/extract-navbar-menu dom "nav.rmenu > span" target))
+  (pp/extract-navbar-menu dom "#fmenu" target))
+
+;(defmethod pp/adjust-form +trademark+ [form target]
+;   (set! (.-__parent_key__ form) "thread")
+;   (set! (.-__is_iframe__ form) true)
+;   (set! (.-__set_width__ form) "545px")
+;   (set! (.-__set_height__ form) "537px")
+;   (set! (.-innerHTML form) (str "<iframe style=\"height:510px; display: block;\"/>"))
+;   form)
 
 ;(defmethod get-captcha +trademark+ [url parent target callback]
-;           (let [url (str "https://2ch.hk/makaba/captcha.fcgi?type=2chaptcha"
-;                          "&board=" (:board target)
-;                          (when parent
-;                                (str "&action=thread")))]
-;                (cb-let [response] (io/get-page url)
-;                        (if (= (:state response) "ok")
-;                          (let [page (:page response)
-;                                text (:text page)]
-;                               (callback (if (.startsWith text "CHECK")
-;                                           (let [key (.substr text (inc (.lastIndexOf text "\n")))
-;                                                 link (str "https://2ch.hk/makaba/captcha.fcgi?type=2chaptcha"
-;                                                           "&action=image&id=" key)]
-;                                                {:link link :challenge key})
-;                                           {})))))))
-
+;  (cb-let [response] (io/get-page "https://2ch.hk/api/captcha/recaptcha/id")
+;     (if (= (:state response) "ok")
+;        (let [page (:page response)
+;              text (:text page)]
+;             (callback {:link "::recaptcha::" :challenge (.parse js/JSON text) "key"})))))
+;
 ;(defmethod get-post-error +trademark+ [response target]
 ;           (let [json (.parse js/JSON (:text response))]
 ;                (when-let [err (aget json "Error")]
 ;                          (when (not (nil? err))
 ;                                (aget json "Reason")))))
-
+;
 ;(defmethod adjust-form +trademark+ [form target]
 ;           (set! (.-__parent_key__ form) "thread")
 ;           (set! (.-__captcha_row__ form) ".captcha-row")

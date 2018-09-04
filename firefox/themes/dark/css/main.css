@@ -137,3 +137,24 @@ input[type="text"]
 #content {
 	display: none
 }
+
+.branding-container {
+	display: flex;
+}
+
+.branding-title {
+	font-size: 42pt;
+	font-weight: bold;
+	display: inline-block;
+	color: #DDC771;
+}
+
+.gray-border {
+	border: 1px solid #757575 !important;
+}
+
+.vh-centered {
+	display: flex;
+	justify-content: center;
+	flex-direction: column;
+}
