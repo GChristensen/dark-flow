@@ -1,13 +1,11 @@
 default: all
 
 all:
-	cp ../firefox/lib/comm.js ./war/comm.js
-	cp ../firefox/data/init_page.js ./war/init_page.js
-	cp ../clojure/frontend.js ./war/frontend.js
-	cp -r ../themes ./war
+	cp ../firefox/glue/net.js ./war/net.js
+	cp ../firefox/engine.js ./war/engine.js
+	cp -r ../firefox/themes ./war
 
 clean:
-	rm ./war/comm.js
-	rm ./war/init_page.js
-	rm ./war/frontend.js
+	rm ./war/net.js
+	rm ./war/engine.js
 	rm -r ./war/themes
