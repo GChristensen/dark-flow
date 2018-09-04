@@ -2,6 +2,13 @@ var IOPort = function(dispatcher) {
 
     this.callbacks = {};
 
+    this.permanentCallbacks = {};
+
+    this.on = function (msgid, callback)
+    {
+        this.permanentCallbacks[msgid] = callback;
+    };
+
     this.once = function (msgid, callback)
     {
         this.callbacks[msgid] = callback;
@@ -9,9 +16,12 @@ var IOPort = function(dispatcher) {
 
     this.emit = function (a1, a2)
     {
-        let callback = this.callbacks[a2.message];
+        let callback = this.permanentCallbacks[a1];
 
-        if (callback)
+        if (!callback && a2.message)
+            callback = this.callbacks[a2.message];
+
+        if (callback && this.callbacks[a2.message])
         {
             delete this.callbacks[a2.message];
         }

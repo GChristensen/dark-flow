@@ -61554,6 +61554,7 @@ kuroi.frontend.get_target = function kuroi$frontend$get_target(thread_line) {
 kuroi.frontend.inline_dialog = function kuroi$frontend$inline_dialog(title, target) {
   var dialog = new goog.ui.Dialog;
   var close_elt = dialog.getTitleCloseElement();
+  kuroi.frontend._STAR_active_dialog_STAR_ = dialog;
   if (cljs.core.vector_QMARK_.call(null, title)) {
     var title_elt_10473 = dialog.getTitleTextElement();
     title_elt_10473.innerHTML = cljs.core.first.call(null, title);
@@ -61562,6 +61563,14 @@ kuroi.frontend.inline_dialog = function kuroi$frontend$inline_dialog(title, targ
   }
   dialog.setContent([cljs.core.str('\x3ciframe src\x3d"'), cljs.core.str(target), cljs.core.str('"/\x3e')].join(""), dialog.setButtonSet(null), close_elt.innerHTML = "Close", close_elt.className = "modal-dialog-title-close goog-flat-button", dialog.setDisposeOnHide(true), dialog.setVisible(true));
   return false;
+};
+kuroi.frontend.close_active_dialog = function kuroi$frontend$close_active_dialog() {
+  if (cljs.core.truth_(kuroi.frontend._STAR_active_dialog_STAR_)) {
+    kuroi.frontend._STAR_active_dialog_STAR_.dispose();
+    return kuroi.frontend._STAR_active_dialog_STAR_ = null;
+  } else {
+    return null;
+  }
 };
 kuroi.frontend.inline_view_link = function kuroi$frontend$inline_view_link(link) {
   var title = [cljs.core.str('\x3ca class\x3d"title-link" target\x3d"_blank" href\x3d"'), cljs.core.str(link), cljs.core.str('"\x3e'), cljs.core.str(link), cljs.core.str("\x3c/a\x3e")].join("");
@@ -62867,6 +62876,7 @@ kuroi.frontend.urlbar = function kuroi$frontend$urlbar(settings, url) {
     document.body.style.display = "none";
     document.body.appendChild(html__8411__auto__.querySelector("#content"));
     kuroi.frontend.load_styles.call(null, (new cljs.core.Keyword(null, "theme", "theme", -1247880880)).cljs$core$IFn$_invoke$arity$1(settings));
+    document.title = "Dark Flow";
     var hash = location.hash;
     var frame_QMARK_ = cljs.core.truth_(hash) ? hash.startsWith("#frame") : null;
     var address_txt = kuroi.frontend.dom_get_element.call(null, "address-txt");
@@ -62875,11 +62885,17 @@ kuroi.frontend.urlbar = function kuroi$frontend$urlbar(settings, url) {
       return function(e) {
         if (!clojure.string.blank_QMARK_.call(null, address_txt.value)) {
           var loc = address_txt.value;
-          var loc__$1 = [cljs.core.str("?front\x26url\x3d"), cljs.core.str(loc.indexOf("://") > 0 ? loc : [cljs.core.str("chan://"), cljs.core.str(loc)].join("")), cljs.core.str(cljs.core.truth_(kuroi.frontend.dom_get_element.call(null, "text-only").checked) ? ":txt" : null)].join("");
-          return kuroi.io._STAR_port_STAR_.emit("follow-url", function() {
-            var obj10592 = {"url":loc__$1, "parent":frame_QMARK_};
-            return obj10592;
-          }());
+          if (cljs.core.truth_(frame_QMARK_)) {
+            return kuroi.io._STAR_port_STAR_.emit("load-threads", function() {
+              var obj10594 = {"url":loc, "parent":true};
+              return obj10594;
+            }());
+          } else {
+            return kuroi.io._STAR_port_STAR_.emit("follow-url", function() {
+              var obj10596 = {"url":[cljs.core.str("?front\x26url\x3d"), cljs.core.str(loc.indexOf("://") > 0 ? loc : [cljs.core.str("chan://"), cljs.core.str(loc)].join("")), cljs.core.str(cljs.core.truth_(kuroi.frontend.dom_get_element.call(null, "text-only").checked) ? ":txt" : null)].join(""), "parent":false};
+              return obj10596;
+            }());
+          }
         } else {
           return null;
         }
@@ -62906,6 +62922,14 @@ goog.exportSymbol("kuroi.frontend.urlbar", kuroi.frontend.urlbar);
 kuroi.frontend.front = function kuroi$frontend$front(settings, url) {
   kuroi.frontend._STAR_resource_STAR_ = url;
   kuroi.io._STAR_port_STAR_.emit("url-followed", url);
+  document.title = url;
+  kuroi.io._STAR_port_STAR_.on("load-threads", function(p1__10597_SHARP_) {
+    kuroi.io._STAR_port_STAR_.emit("url-followed", p1__10597_SHARP_.url);
+    kuroi.frontend._STAR_resource_STAR_ = p1__10597_SHARP_.url;
+    document.title = p1__10597_SHARP_.url;
+    kuroi.frontend.close_active_dialog.call(null);
+    return kuroi.frontend.load_threads.call(null, new cljs.core.Keyword(null, "pages", "pages", -285406513), false);
+  });
   return kuroi.backend.get_frontend_html.call(null, settings, function(html__8411__auto__) {
     kuroi.frontend.setup_themed_vars.call(null, (new cljs.core.Keyword(null, "theme", "theme", -1247880880)).cljs$core$IFn$_invoke$arity$1(settings));
     goog.net.cookies.remove("theme");

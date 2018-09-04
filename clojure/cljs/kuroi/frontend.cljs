@@ -56,6 +56,8 @@
 (def service-loading)
 (def obtaining-data)
 
+(def *active-dialog*)
+
 
 (def *dom-helper* (dom/DomHelper. js/document))
 
@@ -272,6 +274,7 @@
 (defn inline-dialog [title target]
   (let [dialog (goog.ui.Dialog.)
         close-elt (. dialog (getTitleCloseElement))]
+    (set! *active-dialog* dialog)
     (if (vector? title)
       (let [title-elt (. dialog (getTitleTextElement))]
         (set! (.-innerHTML title-elt) (first title)))
@@ -283,6 +286,11 @@
     (.setDisposeOnHide dialog true)
     (.setVisible dialog true))
     false))
+
+(defn close-active-dialog []
+      (when *active-dialog*
+            (.dispose *active-dialog*)
+            (set! *active-dialog* nil)))
 
 (defn inline-view-link [link]
   (let [title (str "<a class=\"title-link\" target=\"_blank\" href=\"" link "\">" 
@@ -1180,7 +1188,7 @@
 
 (defn ^:export urlbar [settings url]
   (with-page urlbar [settings]
-
+    (set! (.-title js/document) "Dark Flow")
     (let [hash (.-hash js/location)
           frame? (when hash (.startsWith hash "#frame"))
           address-txt (dom-get-element "address-txt")
@@ -1188,10 +1196,13 @@
           go-btn-handler (fn [e]
                            (when (not (str/blank? (.-value address-txt)))
                              (let [loc (.-value address-txt)
-                                   loc (str "?front&url=" (if (> (.indexOf loc "://") 0) loc (str "chan://" loc))
-                                            (when (.-checked (dom-get-element "text-only"))
-                                                  ":txt"))]
-                                 (.emit io/*port* "follow-url" (js-obj "url" loc "parent" frame?)))))]
+                                   ]
+                                  (if frame?
+                                     (.emit io/*port* "load-threads" (js-obj "url" loc "parent" true))
+                                     (.emit io/*port* "follow-url" (js-obj "url" (str "?front&url=" (if (> (.indexOf loc "://") 0) loc (str "chan://" loc))
+                                                                                  (when (.-checked (dom-get-element "text-only"))
+                                                                                        ":txt"))
+                                                                       "parent" false))))))]
       (when url (set! (.-value address-txt) url))
       (.focus address-txt)
       (events/listen address-txt
@@ -1209,7 +1220,14 @@
 ;;;;;
   (set! *resource* url)
   (.emit io/*port* "url-followed" url)
+  (set! (.-title js/document) url)
+  (.on io/*port* "load-threads" #(do (.emit io/*port* "url-followed" (.-url %))
+                                     (set! *resource* (.-url %))
+                                     (set! (.-title js/document) (.-url %))
+                                     (close-active-dialog)
+                                     (load-threads :pages false)))
   (with-page frontend [settings]
     (setup-snapin-buttons)
     (setup-nav-popup)
     (load-threads :pages false)))
+

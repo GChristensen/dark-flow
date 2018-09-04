@@ -128,11 +128,18 @@ function dispatch_messages(msg, data, callback)
     case "url-followed":
         browser.storage.local.set({last_url: data});
         break;
-    case "follow-url":
-        console.log("following");
-        console.log(data);
+    case "load-threads":
         if (data.parent) {
-            data.message = "follow-url";
+            data.message = msg;
+            data.parent = false;
+            window.parent.postMessage(data, "*");
+        }
+        else
+            callback(data);
+        break;
+    case "follow-url":
+        if (data.parent) {
+            data.message = msg;
             data.parent = false;
             window.parent.postMessage(data, "*");
         }
