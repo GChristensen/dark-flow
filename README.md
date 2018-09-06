@@ -3,7 +3,7 @@ Dark Flow <sup>EXPERIMENTAL</sup>
 
 A command interface for imageboards.
 
-[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.0.24a/dark_flow.xpi) :: [VIDEO MANUAL](https://www.youtube.com/watch?v=QWI2CNt-snQ)
+[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.0.25/dark_flow.xpi) :: [VIDEO MANUAL](https://www.youtube.com/watch?v=QWI2CNt-snQ)
 
 ![Dark Flow video](screen.png?raw=true)
 
@@ -18,6 +18,25 @@ Wakaba. Parser-plugins for particularly any forum could be written in Clojure sc
 See the [manual](https://raw.github.com/GChristensen/dark-flow/master/manual.png) 
 or [video](https://www.youtube.com/watch?v=QWI2CNt-snQ) for more information.
 
+#### UbiquityWE integration
+
+Use the following command to call Dark Flow from [UbiquityWE](https://github.com/GChristensen/ubichr#readme)
+
+```javascript
+CmdUtils.CreateCommand({
+    name: "dark flow",
+    argument: [{role: "object", nountype: noun_arb_text, label: "words"}],
+    description: "Follow URL in Dark Flow",
+    icon: "https://github.com/GChristensen/dark-flow/blob/master/firefox/icons/icon-32.png?raw=true",
+    builtIn: true,
+    hidden: true,
+    execute: function execute({object: {text}}) {
+        browser.runtime.sendMessage("dark-flow@firefox", {message: "dark-flow:follow-url", url: text}, null);
+        CmdUtils.closePopup();
+    },
+    preview: "Follow URL in Dark Flow"
+});
+```
 
 #### Background
 
