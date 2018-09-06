@@ -9,17 +9,36 @@
       <div class="settings-group">
         <span class="gold">Personal data</span>
         <hr/>
+
         <div id="remember-btn" class="goog-flat-button">Show hidden threads</div>
         <div id="clear-watch-btn" class="goog-flat-button">Clear all watch items</div>
         <div id="clear-data-btn" class="goog-flat-button">Clear all personal data</div>
       </div>
-      <div class="settings-group">
+      <div id="watch-settings">
         <span class="gold">Watch</span>
         <hr/>
-        <input type="checkbox" id="watch-first">Pin watch items</input><br/>
-        <input type="checkbox" id="remember-expanded">Remember expanded threads</input><br/>
+        <div>
+          <input type="checkbox" id="watch-first">Pin watch items</input><br/>
+          <input type="checkbox" id="remember-expanded">Remember expanded threads</input><br/>
+        </div>
         <!--input type="checkbox" id="always-calc-delta">Autoload content of out-of-scope watch items</input-->
       </div>
+      <div id="misc-container" class="settings-group">
+        <span class="gold">Miscellaneous</span>
+        <hr/>
+        <p>
+          Theme:
+          <select id="theme">
+            <option value="dark">Dark</option>
+            <option value="light">Light</option>
+          </select>
+        </p>
+        <p>
+          <input type="checkbox" id="force-textonly">Force text only</input><br/>
+        </p>
+      </div>
+
+
       <!--div class="settings-group">
         <span class="gold">Archive</span>
         <hr/>
@@ -47,22 +66,8 @@
           <hr/>
           <textarea id="favorites"></textarea>
         </div>
-        <div id="misc-container">
-          <span class="gold">Miscellaneous<sup>&nbsp;</sup></span>
-          <hr/>
-          <p>
-          Theme: 
-          <select id="theme">
-            <option value="dark">Dark</option>
-            <option value="light">Light</option>
-          </select>
-          </p>
-          <p>            
-            <input type="checkbox" id="force-textonly">Force text only</input><br/>
-          </p>
-        </div>
-        <div class="clear"/>
       </div>
+      <div class="clear"/>
       <div class="settings-group">
         <hr/>
         <div id="save-settings-btn" class="goog-flat-button">Save settings</div>

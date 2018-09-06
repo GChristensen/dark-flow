@@ -49,6 +49,7 @@
 (def ^:const error-loading-page "<div class=\"prohibit load-indicator\">Error loading page</div>")
 (def ^:const the-list-is-empty "<div class=\"load-indicator\">The list is empty</div>")
 
+
 (def *theme*)
 (def *addon*)
 (def *file-base*)
@@ -57,7 +58,6 @@
 (def obtaining-data)
 
 (def *active-dialog*)
-
 
 (def *dom-helper* (dom/DomHelper. js/document))
 
@@ -153,7 +153,10 @@
            ;; TODO add callback parameter for load to move body style into macros.clj
            (.addEventListener elt "load" #(when
                                             (.endsWith filename "closure.css")
-                                                (set! (.-display (.-style (.-body js/document))) "block"))))
+                                                (set! (.-display (.-style (.-body js/document))) "block")
+                                            (let [address-txt (dom-get-element "address-txt")]
+                                                 (when address-txt
+                                                       (.focus address-txt))))))
       "ico" (let [elt (.createElement js/document "link")]
               (set! (.-rel elt) "icon")
               (set! (.-href elt) filename)
@@ -213,7 +216,6 @@
       (js/alert (:alert meta)))))
 
 (defn append-threads [threads &{:keys [hide-indicator]}]
-      (.log js/console "appending")
   (when hide-indicator
     (when-let [loading-thread (.querySelector threads ".loading-thread")]
       (hide-elt loading-thread)))
@@ -251,22 +253,6 @@
                                 ;; group line in the watch list
                                 thread-group)]
           (bk/make-target (str (.-innerHTML board-link))))))
-    *target*))
-
-#_(defn get-target [thread-line]
-  (if (or (not *target*) (:chain *target*))
-                           ;; general case (button in thread stream)
-    (let [thread-group (or (when-let [group-line (sibling-by-class thread-line "group-line")]
-                             (child-by-class group-line "thread-group"))
-                           ;; button in the stats line
-                           thread-line)]
-      (when thread-group
-        (when-let [board-link (if (:chain *target*) 
-                                ;; <a> element
-                                (child-by-class thread-group "board-link")
-                                ;; group line in the watch list
-                                thread-group)]
-        (bk/make-target (str (.-innerHTML board-link))))))
     *target*))
 
 ;; inline view ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -477,7 +463,7 @@
                        (.appendChild (.-body js/document) popup-elt)
                        (let [links (.querySelectorAll popup-elt "a[data-onmouseover")]
 
-                            (.forEach links #(do (.log js/console %)
+                            (.forEach links #(do
                                                (set! (.-onmouseover %) (fn [event] (show-popup event, post, true)))
                                                  (set! (.-onmouseout %) (fn [event] (show-popup event, post, false))))))
                        (when node
@@ -542,10 +528,39 @@
           (set! failed-node nil)
           (hide-popup e post))))))
 
+
+(def ^:const tiny-urlbar-popup-elt (create-elt "div"
+                                               {"class" "gold popup zpopup",
+                                                "id" "tiny-urlbar-popup",
+                                                "innerHTML" "Go: <input id=\"address-txt\" class=\"gold\" type=\"text\" size=\"50\"
+                                                 \"style=\"width: 500px;\" autofocus/>"}))
+(def tiny-urlbar-popup (goog.ui.Popup. tiny-urlbar-popup-elt))
+
+(defn setup-tiny-urlbar-popup []
+      (.appendChild (.-body js/document) tiny-urlbar-popup-elt)
+      (.setPinnedCorner tiny-urlbar-popup Corner/TOP_LEFT)
+      (let [address-txt (dom-get-element "address-txt")]
+        (set! (.-value address-txt) *resource*)
+        (events/listen address-txt
+                       goog.events.EventType/KEYPRESS
+                       (fn [e]
+                           (cond (= (.-keyCode e) 13) ; enter
+                                 (do (.emit io/*port* "load-threads" (js-obj "url" (.-value address-txt)))
+                                     (.setVisible tiny-urlbar-popup false))
+                                 (= (.-keyCode e) 27) ; esc
+                                 (.setVisible tiny-urlbar-popup false))))
+        (events/listen js/document
+                       goog.events.EventType/KEYDOWN
+                       (fn [e]
+                           (cond (and (= (.-keyCode e) 81) (.-ctrlKey e)) ; ctrl+q
+                                 (.click (dom-get-element "follow-btn")))))))
+
+
 ;; thread control handlers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn ^:export lazy-get-watch [element watch-stream?]
   (let [thread-line (parent-by-class element "thread-line")
+        thread-control (child-by-class thread-line "thread-control")
         target (get-target thread-line)]
     (if target
       (let [target (if watch-stream? (assoc target :replies 0) target)
@@ -556,18 +571,39 @@
         (cb-let [response] (bk/lazy-get-watch {:thread-id thread-id :target target})
           (if response
             (let [post-count (child-by-class thread-line "post-count")
-                  oppost (child-by-class thread-line "thread-oppost")]
-              (set! (.-innerHTML service-pane) (delta-posts (:post-delta response)))
-              (set! (.-innerHTML post-count) (str "[" (:post-count response) "]"))
-              (when (:replies response)
-                (let [expand-trigger (child-by-class thread-line "expand-trigger")
-                      existing-replies (child-by-class oppost "replies")
-                      replies (.-firstChild (:replies response))]
-                  (.removeChild oppost existing-replies)
-                  (.appendChild oppost replies)
-                  (if (.-expanded_ expand-trigger)
-                    (set! (.-display (.-style replies)) "block")))))
-            (set! (.-innerHTML service-pane) empty-set))))
+                  oppost (child-by-class thread-line "thread-oppost")
+                  existing-replies (child-by-class oppost "replies")
+                  replies (:replies response)]
+                  (if (>= (.indexOf (.-className thread-control) "incomplete") 0)
+                   (let [image-link (child-by-class oppost "image-link")
+                                     ;replies (.querySelector oppost ".replies")
+                                     lazy-oppost (child-by-class replies "reply")
+                                     lazy-image-link (child-by-class lazy-oppost "image-link")
+                                     ]
+                                    ;(.removeChild (.-parentNode lazy-oppost) lazy-oppost)
+                                    ;(.appendChild (.-body js/document) lazy-oppost)
+                                    ;(log (.-innerHTML (.-firstChild replies)))
+                                    ;(.removeChild (.-parentNode lazy-image-link) lazy-image-link)
+                                    ;(.appendChild (.-parentNode image-link) lazy-image-link)
+                                    ;(.removeChild (.-parentNode image-link) image-link)
+                                    ;(.setAttribute post-image "src" (.getAttrubute lazy-post-image "src"))))
+                                  (.removeChild oppost existing-replies)
+                                  (.insertBefore oppost replies (.-lastChild oppost))
+                     )
+                   (do
+                      (set! (.-innerHTML service-pane) (delta-posts (:post-delta response)))
+                      (set! (.-innerHTML post-count) (str "[" (:post-count response) "]"))
+                      (when replies
+                        (let [expand-trigger (child-by-class thread-line "expand-trigger")
+                              replies (.-firstChild replies)
+                              collapse-bar (child-by-class replies "collapse-bar")]
+                          (.removeChild (.-parentNode collapse-bar) collapse-bar)
+                          (.removeChild oppost existing-replies)
+                          (.appendChild oppost replies)
+                          (.insertBefore oppost replies (.-lastChild oppost))
+                          (if (.-expanded_ expand-trigger)
+                            (set! (.-display (.-style replies)) "block")))))))
+                  (set! (.-innerHTML service-pane) empty-set))))
       ;; if the dom isn't constructed yet
       (js/setTimeout #(lazy-get-watch element watch-stream?) 2000))))
 
@@ -671,14 +707,19 @@
     (set! (.-innerHTML service-pane) service-loading)
     (cb-let [posts] (bk/get-thread-posts {:thread-id thread-id :post-count posts :target target})
       (if posts
-        (let [oppost (child-by-class thread-line "thread-oppost")
-              existing-replies (child-by-class oppost "replies")]
+        (let [posts (.-firstChild posts)
+              oppost (child-by-class thread-line "thread-oppost")
+              existing-replies (child-by-class oppost "replies")
+              orig-collapse-bar (child-by-class oppost "collapse-bar")
+              collapse-bar (child-by-class posts "collapse-bar")]
+           (.removeChild (.-parentNode orig-collapse-bar) orig-collapse-bar)
+           (.removeChild (.-parentNode collapse-bar) collapse-bar)
           (when-let [indicator (.querySelector posts ".load-indicator > img")]
             (set! (.-src indicator) (themed-image (.getAttribute indicator "src"))))
           (.removeChild oppost existing-replies)
-          (.appendChild oppost (.-firstChild posts))
+          (.appendChild oppost posts)
           (set! (.-innerHTML service-pane) service-html)
-          (expand-thread (.-id oppost) true))
+             (expand-thread (.-id oppost) true))
         (set! (.-innerHTML service-pane) empty-set)))))
 
 ;; expansion of the abbreviated posts
@@ -734,7 +775,10 @@
           (when-let [form (:form meta)]
             (.appendChild (.-body js/document) (:form meta)))
           (when-let [navbar (:navbar meta)]
-            (.appendChild (dom-get-element "nav-popup") navbar))
+            (let [navbar-popup (dom-get-element "nav-popup")
+                  navbar-elt (.-firstChild navbar-popup)]
+               (when navbar-elt (.removeChild navbar-popup navbar-elt))
+               (.appendChild navbar-popup navbar)))
           (when threads
             (set! (.-innerHTML (child-by-class threads "thread-group"))
                   (format-stats stats target))
@@ -764,7 +808,7 @@
                          " page...")))
             (cb-let [threads stats meta] (bk/load-threads {:target target :key pages})
                     (when-let [form (:form meta)]
-                      (.appendChild (.-body js/document) form))
+                              (.appendChild (.-body js/document) form))
                     (when-let [navbar (:navbar meta)]
                       (.appendChild (dom-get-element "nav-popup") navbar))
                     (set! (.-innerHTML (dom-get-element "thread-list-caption"))
@@ -803,13 +847,17 @@
       (str (.-pathname js/location)))
 
 (defn setup-snapin-buttons []
-  (let [a-btn (dom-get-element "follow-btn")]
+  (let [a-btn (dom-get-element "follow-btn")
+        container (dom-get-element "address-btn-container")]
        (events/listen a-btn
                       goog.events.EventType/CLICK
-                      #(inline-dialog "Follow" (str (get-base-url) "?urlbar#frame"))))
+                           #(let [a-rect (.getBoundingClientRect container)]
+                              (.setPosition tiny-urlbar-popup (ClientPosition. (.-left a-rect) (.-top a-rect)))
+                              (.setVisible tiny-urlbar-popup true)
+                              (.focus (dom-get-element "address-txt")))))
+                      #_(inline-dialog "Follow" (str (get-base-url) "?urlbar#frame"))
 
   (let [s-btn (dom-get-element "settings-btn")]
-       (.log js/console s-btn)
     (events/listen s-btn
                    goog.events.EventType/CLICK
                    #(inline-dialog "Settings" (str (get-base-url) "?settings&target="
@@ -1204,7 +1252,6 @@
                                                                                         ":txt"))
                                                                        "parent" false))))))]
       (when url (set! (.-value address-txt) url))
-      (.focus address-txt)
       (events/listen address-txt
                      goog.events.EventType/KEYPRESS
                      (fn [e]
@@ -1213,6 +1260,7 @@
       (events/listen go-btn
                      goog.ui.Component.EventType/ACTION
                      go-btn-handler))))
+
 
 (defn ^:export front [settings url]
 ;;;;;
@@ -1229,5 +1277,6 @@
   (with-page frontend [settings]
     (setup-snapin-buttons)
     (setup-nav-popup)
-    (load-threads :pages false)))
+    (load-threads :pages false)
+    (setup-tiny-urlbar-popup)))
 

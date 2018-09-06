@@ -660,6 +660,10 @@ span.spoiler:hover, span[onmouseover*="color='white'"]:hover {
 	padding: 4px;
 }
 
+.zpopup {
+	z-index: 10000;
+}
+
 .nav-popup
 {
     background-color: #F0E0D6;

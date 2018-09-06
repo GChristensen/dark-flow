@@ -17,8 +17,8 @@
   `(cb-let [html#] (~(symbol (str "bk/get-" page "-html")) ~@args)
      (~'setup-themed-vars (:theme ~'settings))
      (cookies/remove "theme")
-     (cookies/set "theme" (:theme ~'settings) 31557600 "/")
-           (set! (.-display (.-style (.-body js/document))) "none")
+     (cookies/set "theme" (:theme ~'settings) 2147483647 "/")
+     (set! (.-display (.-style (.-body js/document))) "none")
      (.appendChild (.-body js/document) (.querySelector html# "#content"))
      (~'load-styles (:theme ~'settings) ~@(if (= page 'settings) [:settings true] []))
      ~@body))
@@ -73,7 +73,7 @@
          ~lst))))
 
 ;; if not fallbac, acts on live node, mimics clone-for otherwise
-(defmacro clone-for-live-node [live-node window onendclone [sym lst] & forms]
+(defmacro clone-for-live-node [live-node window _ [sym lst] & forms]
   `(fn [pnod#]
      (let [div# ~live-node
            fallback# (not div#)
@@ -104,6 +104,8 @@
                           (js/setTimeout #(breaker# (rest lst#) que#)
                                          1)
                           (do
+                            (.emit io/*port* nil (~'js-obj "message"(str "nodes-cloned-for-" (:id (first ~lst)))
+                                                         "data" (pr-str ~lst)))
                             (if fallback#
                               (do (ef/at
                                    pnod#

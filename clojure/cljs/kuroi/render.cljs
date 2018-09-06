@@ -269,7 +269,7 @@
                      node)
                     node))
                 [:.lazy-load-trigger]
-                (mk/do-when (and (:onwatch th) (not (:post-delta th)))
+                (mk/do-when (or (:incomplete th) (and (:onwatch th) (not (:post-delta th))))
                          (ef/set-attr :src (str io/*file-base* "empty.png")))
                 [:.service-pane]
                 (fn [node]
@@ -289,6 +289,8 @@
                 (fn [node]
                   (cond (:onwatch th)
                         ((ef/set-attr :class "thread-control onwatch") node)
+                        (:incomplete th)
+                        ((ef/set-attr :class "thread-control incomplete") node)
                         (:boundary th)
                         ((ef/set-attr :class "thread-control read") node)
                         (:pre-boundary th)

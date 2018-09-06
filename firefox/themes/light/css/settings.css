@@ -21,7 +21,7 @@ hr
 	margin: 20px 0;
 }
 
-#wf-title, #fav-container
+#wf-title, #watch-settings
 {
 	float: left;
 	width: 300px;
@@ -36,6 +36,10 @@ hr
 #misc-container
 {
 	width: auto;
+}
+
+#favorites {
+	width: 610px;
 }
 
 textarea
@@ -53,4 +57,8 @@ textarea
 {
     display: none;
     color: red;
+}
+
+#save-settings-btn {
+	margin-left: 515px;
 }

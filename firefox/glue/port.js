@@ -25,6 +25,7 @@ var IOPort = function(dispatcher) {
         {
             delete this.callbacks[a2.message];
         }
+
         dispatcher(a1, a2, callback);
     }
 };

@@ -63,11 +63,22 @@
     (into {}
      (filter (complement nil?)
              (for [chan (str/split defs #"\n")]
-               (let [chan (str/trim chan)]
+               (let [chan (str/trim chan)
+                     chan (str/replace chan #"\s+" " ")
+                     chan (str/replace chan #"[A-Za-z-]+://" "")]
                  (when (not (str/blank? chan))
-                   (let [colon (.indexOf chan ":")]
-                     [(.substring chan 0 colon)
-                      (.substring chan colon)]))))))))
+                   (let [space (.indexOf chan " ")
+                         [from to] (.split chan " ")
+                         board (if (> space 0) to chan)
+                         colon (.lastIndexOf board ":")
+                         forum (if (> colon 0) (.substring board 0 colon) board)
+                         options (if (> colon 0) (.substring board colon) nil)]
+                        (if (> space 0)
+                          [forum [options from]]
+                         [forum
+                          options])))))))))
+
+
 
 (defn save-settings []
   (let [settings {:pin-watch-items (enabled? (dom/getElement "watch-first"))
