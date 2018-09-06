@@ -6,7 +6,7 @@ function openBoard() {
 
 browser.browserAction.onClicked.addListener(openBoard);
 
-browser.runtime.onMessage.addListener(msg => {
+browser.runtime.onMessageExternal.addListener(msg => {
    switch (msg.message) {
        case "dark-flow:follow-url":
            browser.tabs.create({
