@@ -25,7 +25,7 @@ Use the following command to call Dark Flow from [UbiquityWE](https://github.com
 ```javascript
 CmdUtils.CreateCommand({
     name: "dark flow",
-    argument: [{role: "object", nountype: noun_arb_text, label: "words"}],
+    argument: [{role: "object", nountype: noun_arb_text, label: "URL"}],
     description: "Follow URL in Dark Flow",
     icon: "https://github.com/GChristensen/dark-flow/blob/master/firefox/icons/icon-32.png?raw=true",
     builtIn: true,
