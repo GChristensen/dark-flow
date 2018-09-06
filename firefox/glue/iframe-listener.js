@@ -1,5 +1,9 @@
+
+if (window.parent != window && location.pathname.endsWith("/post")) // 4chan in iframe
+    setTimeout(() => browser.runtime.sendMessage({message: "dark-flow:post-form-iframe-submitted"}), 3000);
+
 if (location.hash && location.hash.startsWith("#form")) {
-    let form = document.body.querySelector("form[name='post']");
+    let form = document.body.querySelector("form[name='post']"); // 4chan in iframe
     if (form) {
         document.body.innerHTML = "";
 
@@ -30,12 +34,10 @@ if (location.hash && location.hash.startsWith("#form")) {
             e.preventDefault();
             let newScript = document.createElement('script');
             newScript.innerHTML = `
-                if (grecaptcha.getResponse()) {    
-                    window.postMessage({message: "dark-flow:post-form-recaptcha-filled"}, "*");
+                if (grecaptcha.getResponse()) {
+                  document.body.querySelector("form[name='post']").submit();
                 }
                 else {
-                    //window.postMessage({message: "dark-flow:post-form-recaptcha-filled"}, "*");
-                    
                     let captcha_elt = document.getElementById("g-recaptcha");
 
                     if (captcha_elt) {
@@ -49,10 +51,6 @@ if (location.hash && location.hash.startsWith("#form")) {
         window.addEventListener('message', function(event) {
             if (event.data && event.data.message === "dark-flow:post-form-iframe-loaded") {
                 browser.runtime.sendMessage({message: "dark-flow:post-form-iframe-loaded"});
-            }
-            else if (event.data && event.data.message === "dark-flow:post-form-recaptcha-filled") {
-                browser.runtime.sendMessage({message: "dark-flow:post-form-iframe-submitted"});
-                form.submit();
             }
         });
 

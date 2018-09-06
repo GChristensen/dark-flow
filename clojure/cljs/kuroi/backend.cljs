@@ -48,7 +48,7 @@
         forum (str trade "/" board)
         defaults (:default-params-map settings)
         url (if-let [forum-defaults (and defaults (defaults forum))]
-              (str url forum-defaults)
+              (str url (if (vector? forum-defaults) (first forum-defaults) forum-defaults))
               url)
         pages (get (re-find #":(\d+)p" url) 1)
         refresh (get (re-find #":(\d+)r" url) 1)
@@ -57,6 +57,7 @@
         hdlns (s-in? url ":hdlns")]
         (when (and domain board)
           {:url url
+           :rewrite (when (and defaults (defaults forum) (vector? (defaults forum))) (second (defaults forum)))
            :params (get addr 5)
            :trade trade
            :board board
@@ -263,7 +264,7 @@
       (if (= (:state response) "ok")        
         (if-let [thread (first (pp/parse-page (:page response) target))]
           (cb-let [stored-oppost-str] (io/get-data 'watch 'oppost (:internal-id thread))
-            (when stored-oppost-str
+            (if stored-oppost-str
               (let [watch-item (reader/read-string stored-oppost-str)
                     post-delta (- (:post-count thread) (:post-count watch-item))
                     replies-html (when (and (not (:hdlns target)) (> (:replies target) 0))
@@ -276,7 +277,10 @@
                                            :last-id (:last-id thread)))}))
                 (callback {:post-delta post-delta
                            :post-count (:post-count thread)
-                           :replies replies-html}))))
+                           :replies replies-html}))
+              (callback {:post-count (:post-count thread)
+                         :replies (render/replies thread target)})
+              ))
           (callback nil))
         (callback nil)))))
 

@@ -79,6 +79,7 @@ input[type="text"]
 .gold
 {
 	color: #800000;
+	font-weight: bold;
 }
 
 .red

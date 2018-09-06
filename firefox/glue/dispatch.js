@@ -117,9 +117,6 @@ function dispatch_messages(msg, data, callback)
               if (value)
               {
                   theme = value[0];
-                  console.log("theme stored")
-                  console.log(theme)
-
                   browser.storage.local.get(null, )
                   browser.storage.local.set({theme: theme});
               }
@@ -150,6 +147,9 @@ function dispatch_messages(msg, data, callback)
     case "dark-flow:post-form-iframe-loaded":
         callback();
         break;
+    default:
+        if (callback)
+            callback(data);
     }
 }
 
