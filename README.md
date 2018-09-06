@@ -9,7 +9,7 @@ A command interface for imageboards.
 
 SEE ALSO: [UbiquityWE](https://github.com/GChristensen/ubichr#readme)
 
-##Description
+#### Description
 
 Allows to unify and enrich user experience of Wakaba-style imageboards through 
 additional functionality, data transformations and simple command language. Generally,
@@ -19,7 +19,7 @@ See the [manual](https://raw.github.com/GChristensen/dark-flow/master/manual.png
 or [video](https://www.youtube.com/watch?v=QWI2CNt-snQ) for more information.
 
 
-##Background
+#### Background
 
 At first the project was implemented just for fun as the [dm-browser](https://github.com/GChristensen/dm-browser) 
 GAE-application in an early version of Clojure (at the times when Clojure script was even not 
