@@ -1,9 +1,9 @@
 Dark Flow <sup>EXPERIMENTAL</sup>
 =========
 
-A command interface for imageboards.
+A command interface for paginated forums.
 
-[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.0.25/dark_flow.xpi) :: [VIDEO MANUAL](https://www.youtube.com/watch?v=QWI2CNt-snQ)
+[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.0.29/dark_flow.xpi) :: [VIDEO MANUAL](https://youtu.be/Lh4dB9GWT28)
 
 ![Dark Flow video](screen.png?raw=true)
 
@@ -47,7 +47,7 @@ to enter chan:// style urls in address bar directly (this was necessary
 to distinguish them from regular http:// urls and apply special processing). 
 It was reworked again after Clojure Script introduced a set of breaking changes
 and when multiprocess Firefox has appeared.
-When Firefox quantum has broken it, it was ported back to GAE, and finally again 
+When Firefox quantum has broken it once more, it was ported back to GAE, and finally again 
 to Firefox Quantum. As the result, the current codebase consists exclusively of hacks and obscure
-control streams needed to overcome all the limitations encountered in the past.
+control streams needed to overcome all the limitations encountered in the way.
  

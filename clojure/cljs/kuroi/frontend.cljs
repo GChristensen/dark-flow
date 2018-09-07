@@ -827,7 +827,7 @@
         (when (:fourchan *target*)
           (load-css *theme* "flags-4chan.css"))
         (if *target*
-          (let [target (assoc *target* :subsequent subsequent)] 
+          (let [target (assoc *target* :subsequent subsequent)]
 ;            (load-external (str "http://" (:trade target) "/favicon.ico") "ico")
             (set! (.-innerHTML (dom-get-element "thread-list-caption"))
                   (str "Loading " (pages target)
@@ -838,7 +838,10 @@
                     (when-let [form (:form meta)]
                               (.appendChild (.-body js/document) form))
                     (when-let [navbar (:navbar meta)]
-                      (.appendChild (dom-get-element "nav-popup") navbar))
+                              (let [navbar-popup (dom-get-element "nav-popup")
+                                    navbar-elt (.-firstChild navbar-popup)]
+                                   (when navbar-elt (.removeChild navbar-popup navbar-elt))
+                                   (.appendChild navbar-popup navbar)))
                     (set! (.-innerHTML (dom-get-element "thread-list-caption"))
                           (format-stats stats target))
                     (insert-threads threads :meta meta)))

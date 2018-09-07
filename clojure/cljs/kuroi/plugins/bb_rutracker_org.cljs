@@ -6,7 +6,7 @@
 
 ;; work in progress
 
-(def ^:const +trademark+ "piracy.gov")
+(def ^:const +trademark+ "rutracker.org")
 
 (defmethod pp/paginate +trademark+ [n target]
    (str "https://" (:rewrite target) "&start=" (* n 50)))

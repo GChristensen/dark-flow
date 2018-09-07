@@ -340,7 +340,10 @@
                 [:.post-count]
                 (ef/content (str "[" (:post-count th) "]"))
                 [:.thread-title]
-                (ef/html-content (:title th))
+                (ef/do-> (ef/set-attr :data-onclick (str "frontend.expand_thread(\""
+                                                         (:internal-id th)
+                                                         "\")"))
+                (ef/html-content (:title th)))
                 [:.thread-oppost :> :.post-container :> :.image-container :>
                  :.image-link :> :.post-image]
                 (mk/do-when (and (not (:force-text target)) (:thumb th))
