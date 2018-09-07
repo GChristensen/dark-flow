@@ -22,9 +22,9 @@
                         #(let [l (.getAttribute % "href")]
                               (set! (.-href %) (str "?front&url="
                                     (if (s-in? l "..")
-                                      (str (:orig-scheme target) "://" (:domain target)
+                                      (str (:scheme target) (:domain target)
                                            "/" (second (re-find #"\.\./(.*)/" l)))
-                                      (str/replace l "http://" (:orig-scheme target)))))
+                                      (str/replace l "http://" (:scheme target)))))
                               %))))
 
 (defmethod pp/get-captcha +trademark+ [url parent target callback]

@@ -96,7 +96,7 @@
                         ;#(re-matches #".*\.org/..*" (.getAttribute % "href"))
                         #(re-matches #"/[^/]+/" (.getAttribute % "href"))
                         #(do
-                           (a-> href % (str "?front&url=" (:orig-scheme target) "://" (:trade target) (.getAttribute % "href") ))
+                           (a-> href % (str "?front&url=" (:scheme target) (:trade target) (.getAttribute % "href") ))
                            %))))
 
 ;(defmethod get-post-error +trademark+ [response target]

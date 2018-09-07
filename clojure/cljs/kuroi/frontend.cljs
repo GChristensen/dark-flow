@@ -377,35 +377,50 @@
          ; none
         (let [full (.createElement js/document (if video? "video" "img"))
               existing (dom-get-element "_fullimg")
+              realign? (and (= full-w 0) (= full-h 0))
               scr-w (.-clientWidth (.-body js/document))
               scr-h (.-innerHeight js/window)
-              [new-w new-h] (if (or (> full-w scr-w) (> full-h scr-h))
-                              (let [new-w (/ (* full-w scr-h) full-h)
-                                    new-h (/ (* full-h scr-w) full-w)]
-                                [(if (> new-w scr-w) scr-w new-w) (if (<= new-w scr-w) scr-h new-h)])
-                              [full-w full-h])]
-          (when existing
-            (.removeChild (.-parentNode existing) existing))
-          (when video? 
-            (set! (.-controls full) true)
-            (set! (.-autoplay full) true))
-          (.addEventListener full "DOMMouseScroll" resize-image) ; Chrome: 'mousewheel'
-          (make-moveable full)
-          (set-attrs full
-                     {"id"     "_fullimg"
-                      "src"    (.-href a)
-                      "title"  (.-href a)
-                      "alt"    (.-href a)
-                      "width"  new-w
-                      "height" new-h
-                      "style"  (str "display: block;"
-                                    "position: fixed;"
-                                    "z-index: 5000;"
-                                    " border: 1px solid black;"
-                                    "left:" (/ (- scr-w new-w) 2) "px;"
-                                    "top:" (/ (- scr-h new-h) 2) "px")
-                      })
-          (.appendChild a full)))))
+              configure-img (fn [full full-w full-h]
+                                (let[
+                                  [new-w new-h] (if (or (> full-w scr-w) (> full-h scr-h))
+                                                  (let [new-w (/ (* full-w scr-h) full-h)
+                                                        new-h (/ (* full-h scr-w) full-w)]
+                                                    [(if (> new-w scr-w) scr-w new-w) (if (<= new-w scr-w) scr-h new-h)])
+                                                  [full-w full-h])]
+                              (when existing
+                                (.removeChild (.-parentNode existing) existing))
+                              (when video?
+                                (set! (.-controls full) true)
+                                (set! (.-autoplay full) true))
+                              (.addEventListener full "DOMMouseScroll" resize-image) ; Chrome: 'mousewheel'
+                              (make-moveable full)
+                              (set-attrs full
+                                         {"id"     "_fullimg"
+                                          "src"    (.-href a)
+                                          "title"  (.-href a)
+                                          "alt"    (.-href a)
+                                          "width"  new-w
+                                          "height" new-h
+                                          "style"  (str "display: block;"
+                                                        "position: fixed;"
+                                                        "z-index: 5000;"
+                                                        " border: 1px solid black;"
+                                                        "left:" (/ (- scr-w new-w) 2) "px;"
+                                                        "top:" (/ (- scr-h new-h) 2) "px")
+                                          })))]
+              (if realign?
+                (do
+                  (set! (.-onload full)
+                         #(let [rect (.getBoundingClientRect full)]
+                             (log (.-width rect))
+                          (configure-img full (.-width rect) (.-height rect))
+                             (set! (.-onload full) nil)))
+                  (set! (.-src full) (.-href a))
+                  (.appendChild a full))
+                (do
+                  (configure-img full full-w full-h)
+                  (.appendChild a full)
+                  (set! (.-display (.-style full)) "block")))))))
     false)
 
 ;; popups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -560,7 +575,9 @@
 
 (defn ^:export lazy-get-watch [element watch-stream?]
   (let [thread-line (parent-by-class element "thread-line")
+        oppost (child-by-class thread-line "thread-oppost")
         thread-control (child-by-class thread-line "thread-control")
+        incomplete? (>= (.indexOf (.-className thread-control) "incomplete") 0)
         target (get-target thread-line)]
     (if target
       (let [target (if watch-stream? (assoc target :replies 0) target)
@@ -571,27 +588,39 @@
         (cb-let [response] (bk/lazy-get-watch {:thread-id thread-id :target target})
           (if response
             (let [post-count (child-by-class thread-line "post-count")
-                  oppost (child-by-class thread-line "thread-oppost")
                   existing-replies (child-by-class oppost "replies")
                   replies (:replies response)]
-                  (if (>= (.indexOf (.-className thread-control) "incomplete") 0)
-                   (let [image-link (child-by-class oppost "image-link")
-                                     ;replies (.querySelector oppost ".replies")
-                                     lazy-oppost (child-by-class replies "reply")
-                                     lazy-image-link (child-by-class lazy-oppost "image-link")
-                                     ]
-                                    ;(.removeChild (.-parentNode lazy-oppost) lazy-oppost)
-                                    ;(.appendChild (.-body js/document) lazy-oppost)
-                                    ;(log (.-innerHTML (.-firstChild replies)))
-                                    ;(.removeChild (.-parentNode lazy-image-link) lazy-image-link)
-                                    ;(.appendChild (.-parentNode image-link) lazy-image-link)
-                                    ;(.removeChild (.-parentNode image-link) image-link)
-                                    ;(.setAttribute post-image "src" (.getAttrubute lazy-post-image "src"))))
-                                  (.removeChild oppost existing-replies)
-                                  (.insertBefore oppost replies (.-lastChild oppost))
-                     )
+                  (if incomplete?
+                   (let [observer (js/MutationObserver. (fn [mutations]
+                                                            (doseq [m mutations]
+                                                                   (when (= (.-type m)"childList")
+                                                                         (doseq [n (.-addedNodes m)]
+                                                                                (when (and (= (.-className n) "reply")
+                                                                                           (= (.-textContent (child-by-class n "reply-ord")) "1"))
+                                                                                      (.disconnect (.-observer oppost))
+                                                                                      (set! (.-observer oppost) nil)
+                                                                                      (let [oppost-text (child-by-class oppost "oppost-text")
+                                                                                            lazy-image-link (child-by-class n "image-link")
+                                                                                            lazy-post-text (child-by-class n "post-text")]
+                                                                                           ;(rdr/replace-events (.-parentNode lazy-image-link))
+                                                                                           (.removeChild (.-parentNode lazy-image-link) lazy-image-link)
+                                                                                           (.appendChild (child-by-class oppost "image-container") lazy-image-link)
+                                                                                           (.removeChild (.-parentNode lazy-post-text) lazy-post-text)
+                                                                                           (set! (.-className lazy-post-text) (str (.-className lazy-post-text) " oppost-text"))
+                                                                                           (.insertBefore (child-by-class oppost "post-container") lazy-post-text oppost-text)
+                                                                                           (.removeChild (.-parentNode oppost-text) oppost-text)
+                                                                                           (.removeChild (.-parentNode n) n)
+                                                                                               )))))))
+                         ]
+                        (set! (.-observer oppost) observer)
+                        (.observe observer
+                                  oppost
+                                  (js-obj "childList" true "subtree" true))
+                     ))
                    (do
-                      (set! (.-innerHTML service-pane) (delta-posts (:post-delta response)))
+                     (if incomplete?
+                        (set! (.-innerHTML service-pane) forget-trigger)
+                        (set! (.-innerHTML service-pane) (delta-posts (:post-delta response))))
                       (set! (.-innerHTML post-count) (str "[" (:post-count response) "]"))
                       (when replies
                         (let [expand-trigger (child-by-class thread-line "expand-trigger")
@@ -600,9 +629,8 @@
                           (.removeChild (.-parentNode collapse-bar) collapse-bar)
                           (.removeChild oppost existing-replies)
                           (.appendChild oppost replies)
-                          (.insertBefore oppost replies (.-lastChild oppost))
                           (if (.-expanded_ expand-trigger)
-                            (set! (.-display (.-style replies)) "block")))))))
+                            (set! (.-display (.-style replies)) "block"))))));)
                   (set! (.-innerHTML service-pane) empty-set))))
       ;; if the dom isn't constructed yet
       (js/setTimeout #(lazy-get-watch element watch-stream?) 2000))))
@@ -1000,7 +1028,7 @@
               (let [iframe (.querySelector form-clone "iframe")]
                    (show-elt load-indicator "inline")
                    (if new-thread?
-                     (.setAttribute (.querySelector form-clone "iframe") "src" (str (:scheme target) (:forum target) "#form"))
+                     (.setAttribute (.querySelector form-clone "iframe") "src" (str (pp/get-scheme target) (:forum target) "#form"))
                      (let [url (str (pp/html-thread-url thread-id target) "#form")]
                           (.setAttribute iframe "src" url)))
                    (.once io/*port* "dark-flow:post-form-iframe-loaded" #(do

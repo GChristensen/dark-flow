@@ -189,7 +189,9 @@
 
 (em/defsnippet replies :compiled "templates/thread-stream.html" [:.replies]
   [thread target &{:keys [word-filter fallback?] :or {word-filter true}}]
-
+  [:.replies]
+  (fn [node]
+      ((ef/set-attr :data-thread-id (:id th)) node))
   [:.expand-trigger]
   (ef/set-attr :data-onclick (str "frontend.expand_thread(\"" ;!!!
                           (:internal-id thread)
@@ -371,6 +373,7 @@
                                        "text-indent oppost-text")))
                 [:.replies]
                 (fn [node]
+                  ((ef/set-attr :data-thread-id (:id th)) node)
                   (if (:expanded th)
                     ((ef/set-attr :style "display: block;") node)
                     node))

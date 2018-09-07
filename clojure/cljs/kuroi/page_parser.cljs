@@ -24,7 +24,12 @@
 (defmethod json? :default [target]
   false)
 
-(defmulti get-page-ext trade-dispatch1)
+(defmulti get-scheme :trade)
+
+(defmethod get-scheme :default [target]
+           "http://")
+
+(defmulti get-page-ext :trade)
 
 (defmethod get-page-ext :default [target]
   "html")
@@ -55,7 +60,7 @@
           url (cond
                (= (get url 0) \/) (if (= (get url 1) \/)
                                     (str "http:" url)
-                                    (str (:scheme target) (:domain target) url))
+                                    (str (get-scheme target) (:domain target) url))
                (re-matches #"^http.*" url) url
                :default (str (:target target) "/" url))]
       (if (:prox target)
@@ -148,7 +153,7 @@
       page-urls)))
 
 (defmethod thread-url :default [thread-id target]
-  (str (:scheme target) (:forum target) "/res/" thread-id "." (get-ext target)))
+  (str (get-scheme target) (:forum target) "/res/" thread-id "." (get-ext target)))
 
 (defmethod html-thread-url :default [thread-id target]
   (thread-url thread-id target))
@@ -501,7 +506,7 @@
                       #(re-matches #"/[^/]+/" (.getAttribute % "href"))
                       #(let [l (.getAttribute % "href")]
                          (set! (.-textContent %) l)
-                         (set! (.-href %) (str "?front&url=" (:orig-scheme target) "://" (:domain target)
+                         (set! (.-href %) (str "?front&url=" (:scheme target) (:domain target)
                                                (.substring l 0 (.lastIndexOf l "/"))))
                          %))))
 
@@ -512,7 +517,7 @@
       (transform-navbar dom target (seq (.-childNodes navbar-elt))
                         #(re-matches #"/?[a-zA-Z0-9-]+/?(index\.x?html)?" (.-href %))
                         #(let [l (.getAttribute % "href")]
-                           (set! (.-href %) (str "?front&url=" (:orig-scheme target) "://" (:domain target)
+                           (set! (.-href %) (str "?front&url=" (:scheme target) (:domain target)
                                                  (if (= (first l) "/")
                                                    (if (s-in? l "index")
                                                      (.substring l 0 (.lastIndexOf l "/"))

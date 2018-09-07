@@ -36,10 +36,10 @@
   (thread "num"))
 
 (defmethod pp/thread-url +trademark+ [thread-id target]
-  (str (:scheme target) (:forum target) "/res/" thread-id ".json"))
+  (str (pp/get-scheme target) (:forum target) "/res/" thread-id ".json"))
 
 (defmethod pp/html-thread-url +trademark+ [thread-id target]
-  (str (:scheme target) (:forum target) "/res/" thread-id ".html"))
+  (str (pp/get-scheme target) (:forum target) "/res/" thread-id ".html"))
 
 (defmethod pp/parse-post +trademark+ [root-node data target]
   (let [post-id (root-node "num")
@@ -50,7 +50,7 @@
              {:id (str post-id)
               :internal-id (str (:prefix target) post-id)
               :date (root-node "date")
-              :link (str (:scheme target) (:forum target) "/res/" (or (:parent-id data) post-id) ".html")
+              :link (str (pp/get-scheme target) (:forum target) "/res/" (or (:parent-id data) post-id) ".html")
               :thumb (when image (pp/fix-url (image "thumbnail") target))
               :image (when image (pp/fix-url (image "path") target))
               :image-size (if image [(image "width") (image "height")] [0 0])

@@ -41,7 +41,8 @@
 (defn make-target [url]
   (let [settings (opts/get-for nil)
         addr (re-find #"(.*://)?(([^/]+)/([a-zA-Z0-9-]+))(.*)" url)
-        protocol (if (get addr 1) (get addr 1) "chan://")
+        scheme (if (get addr 1) (get addr 1) "chan://")
+        protocol (.substr scheme 0 (- (.-length scheme) 3))
         domain (get addr 3)
         board (get addr 4)
         trade (if addr (re-find #"[^.]+\.[^.]+$" domain) url)
@@ -63,8 +64,9 @@
            :board board
            :forum forum
            :domain domain
-           :orig-scheme (.substr protocol 0 (- (.-length protocol) 3))
-           :scheme "http://"
+           :scheme scheme
+           :protocol protocol
+           :incomplete (some #{protocol} ["bb"])
            :hdlns hdlns ; take only opposts
            :fourchan (= trade "4chan.org")
            :kraut (= trade "krautchan.net")

@@ -16,7 +16,7 @@
           (str n "." (pp/get-ext target))))))
 
 (defmethod pp/thread-url +trademark+ [thread-id target]
-  (str (:scheme target) (:forum target) "/thread-" thread-id "." (pp/get-ext target)))
+  (str (pp/get-scheme target) (:forum target) "/thread-" thread-id "." (pp/get-ext target)))
 
 (defmethod pp/get-thread-id +trademark+ [root-node target]
   (let [elt (pp/select root-node ".intro > .post_no")]
