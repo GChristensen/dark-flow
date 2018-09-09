@@ -3,7 +3,7 @@ Dark Flow <sup>EXPERIMENTAL</sup>
 
 A command interface for paginated forums.
 
-[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.0.29/dark_flow.xpi) :: [VIDEO MANUAL](https://youtu.be/Lh4dB9GWT28)
+[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.1.1/dark_flow.xpi) :: [VIDEO MANUAL](https://youtu.be/tNPRCNruWmI)
 
 ![Dark Flow video](screen.png?raw=true)
 
@@ -20,27 +20,11 @@ or [video](https://www.youtube.com/watch?v=QWI2CNt-snQ) for more information.
 
 #### UbiquityWE integration
 
-Use the following command to call Dark Flow from [UbiquityWE](https://github.com/GChristensen/ubichr#readme)
-
-```javascript
-CmdUtils.CreateCommand({
-    name: "dark flow",
-    argument: [{role: "object", nountype: noun_arb_text, label: "URL"}],
-    description: "Follow URL in Dark Flow",
-    icon: "https://github.com/GChristensen/dark-flow/blob/master/firefox/icons/icon-32.png?raw=true",
-    builtIn: true,
-    hidden: true,
-    execute: function execute({object: {text}}) {
-        browser.runtime.sendMessage("dark-flow@firefox", {message: "dark-flow:follow-url", url: text}, null);
-        CmdUtils.closePopup();
-    },
-    preview: "Follow URL in Dark Flow"
-});
-```
+`dark-flow' command is available in UbiquityWE debug mode.
 
 #### Background
 
-At first the project was implemented just for fun as the [dm-browser](https://github.com/GChristensen/dm-browser) 
+At first the project was implemented just for fun as the [dm-browser](https://github.com/GChristensen/dm-browser#readme) 
 GAE-application in an early version of Clojure (at the times when Clojure script was even not 
 versioned) and then ported to Clojure Script to embed it in Firefox 
 to enter chan:// style urls in address bar directly (this was necessary

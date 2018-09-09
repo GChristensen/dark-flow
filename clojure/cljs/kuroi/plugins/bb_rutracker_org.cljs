@@ -37,7 +37,21 @@
         thumb-img (pp/select root-node ".postImg")
         image-link (pp/select root-node ".postImg")
         filesize nil
-        post-text (pp/select root-node ".post_body")]
+        post-text (pp/select root-node ".post_body")
+        post-text (if (== (:post-num data) 1)
+                    (let [magnet (pp/select root-node ".magnet-link")
+                          magnet (when magnet (.cloneNode magnet true))]
+                         (when magnet
+                           (set! (.-textContent magnet) "[MAGNET]")
+                           (when (.-firstChild post-text)
+                            (.insertBefore post-text magnet (.-firstChild post-text))))
+                         post-text)
+                    post-text)
+        colored (pp/select* root-node (str "*[style*='color: blue;'], *[style*='color: darkblue;'], *[style*='color: navy;'],"
+                                           " *[style*='color: black;'], *[style*='color: indigo;'], *[style*='color: red;']"))]
+       (doseq [c colored]
+              (let [style (.getAttribute c "style")]
+                   (.setAttribute c "style" (str/replace style #"color: [^;]+;" ""))))
        (when thumb-img (.setAttribute thumb-img "src" (.getAttribute thumb-img "title")))
        (when image-link (.setAttribute image-link "href" (.getAttribute thumb-img "title")))
        (pp/build-post-data data thread-id date-val title-elt thumb-img image-link

@@ -603,8 +603,9 @@
                                                                                             lazy-image-link (child-by-class n "image-link")
                                                                                             lazy-post-text (child-by-class n "post-text")]
                                                                                            ;(rdr/replace-events (.-parentNode lazy-image-link))
-                                                                                           (.removeChild (.-parentNode lazy-image-link) lazy-image-link)
-                                                                                           (.appendChild (child-by-class oppost "image-container") lazy-image-link)
+                                                                                           (when lazy-image-link
+                                                                                              (.removeChild (.-parentNode lazy-image-link) lazy-image-link)
+                                                                                              (.appendChild (child-by-class oppost "image-container") lazy-image-link))
                                                                                            (.removeChild (.-parentNode lazy-post-text) lazy-post-text)
                                                                                            (set! (.-className lazy-post-text) (str (.-className lazy-post-text) " oppost-text"))
                                                                                            (.insertBefore (child-by-class oppost "post-container") lazy-post-text oppost-text)
@@ -1290,7 +1291,12 @@
                          (go-btn-handler e))))
       (events/listen go-btn
                      goog.ui.Component.EventType/ACTION
-                     go-btn-handler))))
+                     go-btn-handler)
+      (let [s-btn (dom-get-element "settings-btn")]
+           (events/listen s-btn
+                          goog.events.EventType/CLICK
+                          #(inline-dialog "Settings" (str (get-base-url) "?settings&target="
+                                                          (:trade *target*))))))))
 
 
 (defn ^:export front [settings url]

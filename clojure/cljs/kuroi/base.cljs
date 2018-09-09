@@ -5,7 +5,7 @@
 (ns kuroi.base
   (:require [kuroi.io :as io]))
    
-(def *posting-not-impl* #{"2ch.hk"})
+(def *posting-not-impl* #{"2ch.hk" "rutracker.org"})
 
 (def *iichan-hk-wf*
   {:wf-enabled true ; sneaky wordfilter for iichan.hk
