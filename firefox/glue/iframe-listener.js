@@ -1,6 +1,6 @@
 
 if (window.parent != window && location.pathname.endsWith("/post")) // 4chan in iframe
-    setTimeout(() => browser.runtime.sendMessage({message: "dark-flow:post-form-iframe-submitted"}), 3000);
+    setTimeout(() => chrome.runtime.sendMessage({message: "dark-flow:post-form-iframe-submitted"}), 3000);
 
 if (location.hash && location.hash.startsWith("#form")) {
     let form = document.body.querySelector("form[name='post']"); // 4chan in iframe
@@ -50,7 +50,7 @@ if (location.hash && location.hash.startsWith("#form")) {
 
         window.addEventListener('message', function(event) {
             if (event.data && event.data.message === "dark-flow:post-form-iframe-loaded") {
-                browser.runtime.sendMessage({message: "dark-flow:post-form-iframe-loaded"});
+                chrome.runtime.sendMessage({message: "dark-flow:post-form-iframe-loaded"});
             }
         });
 

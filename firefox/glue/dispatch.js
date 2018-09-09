@@ -117,13 +117,12 @@ function dispatch_messages(msg, data, callback)
               if (value)
               {
                   theme = value[0];
-                  browser.storage.local.get(null, )
-                  browser.storage.local.set({theme: theme});
+                  chrome.storage.local.set({theme: theme});
               }
           });
         break;
     case "url-followed":
-        browser.storage.local.set({last_url: data});
+        chrome.storage.local.set({last_url: data});
         break;
     case "load-threads":
         if (data.parent) {
@@ -159,6 +158,6 @@ window.addEventListener("message", (event) => {
     gport.emit(event.data.message, event.data);
 });
 
-browser.runtime.onMessage.addListener (msg => {
+chrome.runtime.onMessage.addListener (msg => {
     gport.emit(msg.message, msg);
 });

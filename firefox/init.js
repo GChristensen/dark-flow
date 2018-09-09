@@ -1,7 +1,7 @@
 
 window.addEventListener("load", () => {
 
-    browser.storage.local.get(null, (bootstrap_settings) => {
+    chrome.storage.local.get(null, (bootstrap_settings) => {
 
         let nodes = document.querySelectorAll("html, body");
         nodes.forEach((n => {
