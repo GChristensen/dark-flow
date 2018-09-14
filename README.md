@@ -20,7 +20,21 @@ or [video](https://www.youtube.com/watch?v=QWI2CNt-snQ) for more information.
 
 #### UbiquityWE integration
 
-`dark-flow' command is available in UbiquityWE debug mode.
+Use the following command to follow dark-flow URLs from UbiquityWE:
+
+```javascript
+CmdUtils.CreateCommand({
+    name: "dark-flow",
+    uuid: "https://github.com/GChristensen/dark-flow",
+    arguments: [{role: "object", nountype: noun_arb_text, label: "URL"}],
+    description: "Follow URLs in <a href='https://github.com/GChristensen/dark-flow#readme'>Dark Flow</a>.",
+    icon: "/commands/more/dark-flow.png",
+    execute: function execute({object: {text}}) {
+        chrome.runtime.sendMessage("dark-flow@firefox", {message: "dark-flow:follow-url", url: text}, null);
+    },
+    preview: "Follow the URL in Dark Flow"
+});
+```
 
 #### Background
 
