@@ -86,6 +86,7 @@
            :first (s-in? url ":first") ; first query in chain
            :prox (s-in? url ":prox")
            :bypass (s-in? url ":bypass")
+           :peek (s-in? url ":peek")
            })))  
 
 ;; data retrieval ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

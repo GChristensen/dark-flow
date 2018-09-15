@@ -3,7 +3,7 @@ Dark Flow <sup>EXPERIMENTAL</sup>
 
 A command interface for paginated forums.
 
-[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.1.1/dark_flow.xpi) :: [VIDEO MANUAL](https://youtu.be/tNPRCNruWmI)
+[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.1.2/dark_flow.xpi) :: [VIDEO MANUAL](https://youtu.be/tNPRCNruWmI)
 
 ![Dark Flow video](screen.png?raw=true)
 

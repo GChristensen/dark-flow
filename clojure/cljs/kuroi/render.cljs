@@ -162,7 +162,13 @@
                    (ef/set-attr :href (:image rep))
                    (ef/set-attr :data-onclick (str "frontend.expand_image(this,"
                                            (first (:image-size rep)) ","
-                                           (second (:image-size rep)) ")"))))
+                                           (second (:image-size rep)) ")"))
+                   (ef/set-attr :data-onmouseover (str "frontend.expand_image(this,"
+                                                       (first (:image-size rep)) ","
+                                                       (second (:image-size rep)) ", " (not (:peek target)) ")"))
+                   (ef/set-attr :data-onmouseout (str "frontend.expand_image(this,"
+                                                      (first (:image-size rep)) ","
+                                                      (second (:image-size rep)) ", " (not (:peek target)) ")"))))
                 [:.image-container]
                 (mk/remove-when (:force-text target))
                 [:.post-text]
@@ -257,6 +263,12 @@
                 [:.thread-header]
                 (ef/do->
                  (ef/remove-attr :style)
+                 ;(ef/set-attr :data-onmouseover (str "if (event.target == this) frontend.expand_thread(\""
+                 ;                                (:internal-id th)
+                 ;                                "\", true," (not (:peek target)) ")"))
+                 ;(ef/set-attr :data-onmouseout (str "if (event.target == this) setTimeout(() => frontend.expand_thread(\""
+                 ;                                (:internal-id th)
+                 ;                                "\", false," (not (:peek target)) "), 500)"))
                  (ef/set-attr :data-onclick (str "if (event.target == this) frontend.expand_thread(\""
                                             (:internal-id th)
                                             "\")")))
@@ -354,7 +366,14 @@
                           (ef/set-attr :href (:image th))
                           (ef/set-attr :data-onclick (str "frontend.expand_image(this,"
                                                      (first (:image-size th)) ","
-                                                     (second (:image-size th)) ")"))))
+                                                     (second (:image-size th)) ")"))
+                          (ef/set-attr :data-onmouseover (str "frontend.expand_image(this,"
+                                                              (first (:image-size th)) ","
+                                                              (second (:image-size th)) ", " (not (:peek target)) ")"))
+                          (ef/set-attr :data-onmouseout (str "frontend.expand_image(this,"
+                                                             (first (:image-size th)) ","
+                                                             (second (:image-size th)) ", " (not (:peek target)) ")"))
+                          ))
                 ;; [:.thread-oppost :> :.image-container]
                 ;; (mk/remove-when (not (:force-text target)))
                 [:.header-exp]
@@ -418,7 +437,13 @@
                            (ef/set-attr :href (:image im))
                            (ef/set-attr :data-onclick (str "frontend.expand_image(this,"
                                                       (first (:image-size im)) ","
-                                                      (second (:image-size im)) ")"))))))))))
+                                                      (second (:image-size im)) ")"))
+                           (ef/set-attr :data-onmouseover (str "frontend.expand_image(this,"
+                                                               (first (:image-size im)) ","
+                                                               (second (:image-size im)) ", " (not (:peek target)) ")"))
+                           (ef/set-attr :data-onmouseout (str "frontend.expand_image(this,"
+                                                              (first (:image-size im)) ","
+                                                              (second (:image-size im)) ", " (not (:peek target)) ")"))))))))))
 
 (defn threads
       ([data target onendclone]

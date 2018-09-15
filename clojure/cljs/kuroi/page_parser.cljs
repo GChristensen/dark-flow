@@ -41,8 +41,11 @@
 
 (defn sanitize [content]
   (when content
+   (str/replace
     (str/replace content #"<([^ ]+)[^>]*onload[^>]*>"
-                 (fn [[_ & match]] (str "<" (first match) ">")))))
+                 (fn [[_ & match]] (str "<" (first match) ">")))
+    "�" "")))
+
 
 (def *host* (get (re-find #"chan://([^/]*)" (js/decodeURI (.-location js/document))) 1))
 (def *host-pattern* (re-pattern (str "https?://" *host* ".*")))

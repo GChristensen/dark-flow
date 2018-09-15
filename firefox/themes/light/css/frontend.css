@@ -473,6 +473,10 @@ table.thread-stream, table#thread-stream
 	cursor: default;
 }
 
+.thread-title {
+    cursor: pointer;
+}
+
 .image-indent
 {
 	margin-left: 80px;

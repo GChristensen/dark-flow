@@ -359,7 +359,8 @@
             (str (- cur-y (* (/ new-h old-h) (- cur-y old-t))) "px")))))
 
 
-(defn ^:export expand-image [a full-w full-h]
+(defn ^:export expand-image [a full-w full-h halt]
+ (when (not halt)
   (if (or (str/blank? (.-href a)) (= "#" (.-href a)))
     (let [img (.querySelector a "img")
           src (when img (.-src img))]
@@ -421,7 +422,7 @@
                   (configure-img full full-w full-h)
                   (.appendChild a full)
                   (set! (.-display (.-style full)) "block")))))))
-    false)
+    false))
 
 ;; popups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -636,7 +637,8 @@
       ;; if the dom isn't constructed yet
       (js/setTimeout #(lazy-get-watch element watch-stream?) 2000))))
 
-(defn ^:export expand-thread [post-id expand? &{:keys [mass]}]
+(defn ^:export expand-thread [post-id expand? halt &{:keys [mass]}]
+ (when (not halt)
   (let [
         post (dom-get-element post-id)
         thread-headlines (dom-get-element "thread-headlines")
@@ -679,7 +681,7 @@
             (set! (.-innerHTML expand-trigger) "&laquo;")
             (.setAttribute expand-trigger "expanded_" "true")))
     (show-elt nav-popup "block"))
-  false)
+  false))
 
 (defn ^:export watch-thread [element]
   (let [thread-line (parent-by-class element "thread-line")
