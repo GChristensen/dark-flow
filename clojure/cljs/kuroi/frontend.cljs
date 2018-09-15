@@ -373,7 +373,7 @@
           (do
             (set! (.-display (.-style full))
                   (if (= (.-display (.-style full)) "none") "" "none"))
-            (js/setTimeout #(.removeChild (.-parentNode full) full) 0))
+            (js/setTimeout #(dom/removeNode full) 0))
           (set! (.-moved full) false))
          ; none
         (let [full (.createElement js/document (if video? "video" "img"))
@@ -389,7 +389,7 @@
                                                     [(if (> new-w scr-w) scr-w new-w) (if (<= new-w scr-w) scr-h new-h)])
                                                   [full-w full-h])]
                               (when existing
-                                (.removeChild (.-parentNode existing) existing))
+                                (dom/removeNode existing))
                               (when video?
                                 (set! (.-controls full) true)
                                 (set! (.-autoplay full) true))
@@ -413,7 +413,6 @@
                 (do
                   (set! (.-onload full)
                          #(let [rect (.getBoundingClientRect full)]
-                             (log (.-width rect))
                           (configure-img full (.-width rect) (.-height rect))
                              (set! (.-onload full) nil)))
                   (set! (.-src full) (.-href a))
@@ -789,7 +788,7 @@
         (js/setTimeout #(continue-chain (rest link-queue) key) 200)))))
 
 (defn start-chain [url key]
-  (let [match (.match url (js/RegExp "([^\\[]+)\\[([^\\]]+)\\](.*)"))
+  (let [match (.match (js/decodeURI url) (js/RegExp "([^\\[]+)\\[([^\\]]+)\\](.*)"))
         prefix (aget match 1)
         boards (vec (.split (aget match 2) (js/RegExp "[\\s\\+,]")))
         postfix (aget match 3)
@@ -874,7 +873,7 @@
         (set! (.-textContent expand-btn) "Expand")
         (set! (.-title expand-btn) "Expand all threads")))
     (array/forEach threads
-                   #(expand-thread (.-id %) expand? :mass true))
+                   #(expand-thread (.-id %) expand? nil :mass true))
     (show-elt nav-popup "block")))
 
 (defn get-base-url[]
