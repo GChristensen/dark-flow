@@ -3,8 +3,13 @@ Dark Flow <sup>EXPERIMENTAL</sup>
 
 A command interface for paginated forums.
 
-[DOWNLOAD (Firefox Add-On)](https://github.com/GChristensen/dark-flow/releases/download/v0.2.1.3/dark_flow.xpi) :: [VIDEO MANUAL](https://youtu.be/tNPRCNruWmI)
-
+![Firefox](https://github.com/GChristensen/gchristensen.github.io/blob/master/firefox.png?raw=true)
+[Firefox Add-On](https://github.com/GChristensen/dark-flow/releases/download/v0.2.1.3/dark_flow.xpi)
+:: ![Chrome](https://github.com/GChristensen/gchristensen.github.io/blob/master/chrome.png?raw=true)
+[Chrome Extension](https://chrome.google.com/webstore/detail/dark-flow/ioflckpnjkfjfbnpbeobnbfcmipanhce)
+:: ![Youtube](https://github.com/GChristensen/gchristensen.github.io/blob/master/youtube.png?raw=true)
+ [Video Manual](https://youtu.be/tNPRCNruWmI)
+ 
 ![Dark Flow video](screen.png?raw=true)
 
 SEE ALSO: [UbiquityWE](https://github.com/GChristensen/ubichr#readme)
