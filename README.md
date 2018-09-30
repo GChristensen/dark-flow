@@ -12,7 +12,7 @@ A command interface for paginated forums.
  
 ![Dark Flow video](screen.png?raw=true)
 
-SEE ALSO: [UbiquityWE](https://github.com/GChristensen/ubichr#readme)
+SEE ALSO: [UbiquityWE](https://github.com/GChristensen/ubiquitywe#readme)
 
 #### Description
 
