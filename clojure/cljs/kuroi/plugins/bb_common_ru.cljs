@@ -78,7 +78,7 @@
                                            :page-index (:page-index (meta target))
                                            :oppost true)
                    oppost (parse-thread-post doc-tree (pp/select doc-tree "#topic_main tbody[id]") data target)
-                   replies (loop [replies (take 4 (pp/select* doc-tree "#topic_main tbody[id]")) num 1 out  []]
+                   replies (loop [replies (pp/select* doc-tree "#topic_main tbody[id]") num 1 out  []]
                                  (let [reply (first replies)]
                                       (if reply
                                         (let [data (pp/cons-post-data :parent-id (:id oppost)
