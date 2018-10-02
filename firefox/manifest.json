@@ -4,7 +4,7 @@
   "description": "A command interface for imageboards",
   "version": "0.2.1.5",
 
-  "homepage_url": "https://gchristensen.github.io/dark-flow",
+  "homepage_url": "https://gchristensen.github.io/dark-flow/",
 
   "applications": {
     "gecko": {
