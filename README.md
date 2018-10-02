@@ -3,43 +3,8 @@ Dark Flow <sup>EXPERIMENTAL</sup>
 
 A command interface for paginated forums.
 
-![Firefox](https://github.com/GChristensen/gchristensen.github.io/blob/master/firefox.png?raw=true)
-[Firefox Add-On](https://github.com/GChristensen/dark-flow/releases/download/v0.2.1.4/dark_flow.xpi)
-:: ![Chrome](https://github.com/GChristensen/gchristensen.github.io/blob/master/chrome.png?raw=true)
-[Chrome Extension](https://chrome.google.com/webstore/detail/dark-flow/ioflckpnjkfjfbnpbeobnbfcmipanhce)
-:: ![Youtube](https://github.com/GChristensen/gchristensen.github.io/blob/master/youtube.png?raw=true)
- [Video Manual](https://youtu.be/tNPRCNruWmI)
- 
-![Dark Flow video](screen.png?raw=true)
+This is a development site. Please visit the main site at: https://gchristensen.github.io/dark-flow/
 
-SEE ALSO: [UbiquityWE](https://github.com/GChristensen/ubiquitywe#readme)
-
-#### Description
-
-Allows to unify and enrich user experience of Wakaba-style imageboards through 
-additional functionality, data transformations and simple command language. Generally,
-it can read any Wakaba-flavour imageboard which is not too different from the original
-Wakaba. Parser-plugins for particularly any forum could be written in Clojure script. 
-See the [manual](https://raw.github.com/GChristensen/dark-flow/master/manual.png) 
-or [video](https://www.youtube.com/watch?v=QWI2CNt-snQ) for more information.
-
-#### UbiquityWE integration
-
-Use the following command to follow dark-flow URLs from UbiquityWE:
-
-```javascript
-CmdUtils.CreateCommand({
-    name: "dark-flow",
-    uuid: "https://github.com/GChristensen/dark-flow",
-    arguments: [{role: "object", nountype: noun_arb_text, label: "URL"}],
-    description: "Follow URLs in <a href='https://github.com/GChristensen/dark-flow#readme'>Dark Flow</a>.",
-    icon: "/commands/more/dark-flow.png",
-    execute: function execute({object: {text}}) {
-        chrome.runtime.sendMessage("dark-flow@firefox", {message: "dark-flow:follow-url", url: text}, null);
-    },
-    preview: "Follow the URL in Dark Flow"
-});
-```
 
 #### Background
 
