@@ -2,14 +2,15 @@
   "manifest_version": 2,
   "name": "Dark Flow",
   "description": "A command interface for imageboards",
-  "version": "0.2.1.4",
+  "version": "0.2.1.5",
 
-  "homepage_url": "https://github.com/GChristensen/dark-flow#readme",
+  "homepage_url": "https://gchristensen.github.io/dark-flow",
 
   "applications": {
     "gecko": {
       "id": "dark-flow@firefox",
-      "strict_min_version": "57.0"
+      "strict_min_version": "57.0",
+      "update_url": "https://raw.githubusercontent.com/GChristensen/dark-flow/master/updates.json"
     }
   },
 
