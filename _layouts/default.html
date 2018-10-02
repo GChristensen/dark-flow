@@ -23,7 +23,7 @@
         <p>{{ site.description | default: site.github.project_tagline }}</p>
 
         {% if site.github.is_project_page %}
-        <p class="view"><a href="{{ site.github.repository_url }}">View the Project on GitHub <small>{{ site.github.repository_nwo }}</small></a></p>
+        <p class="view"><a href="{{ site.github.repository_url }}" target="_blank">View the Project on GitHub <small>{{ site.github.repository_nwo }}</small></a></p>
         {% endif %}
 
         <p class="view"><a href="/" target="_blank">Software by g/christensen <small>gchristnsn.ghithub.io</small></a></p>
@@ -55,7 +55,11 @@
         <script>
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
+                if (this.read<p onclick="document.getElementById('videoman').style.display='block'; this.style.display='none'">
+                    <img title="Watch on Youtube" style="cursor: pointer;" src="/dark-flow/screen.png" alt="screen" /></p>
+
+                    <iframe style="display: none" id="videoman" width="500" height="280" src="https://www.youtube.com/embed/tNPRCNruWmI?autoplay=1"
+                frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>yState == 4 && this.status == 200) {
                     var release = JSON.parse(this.responseText);
                     var link = document.getElementById("xpi-link");
                     link.href = release.assets[0].browser_download_url;
@@ -65,11 +69,7 @@
             xhr.send();
         </script>
 
-        <p onclick="document.getElementById('videoman').style.display='block'; this.style.display='none'">
-            <img title="Watch on Youtube" style="cursor: pointer;" src="/dark-flow/screen.png" alt="screen" /></p>
 
-        <iframe style="display: none" id="videoman" width="500" height="280" src="https://www.youtube.com/embed/tNPRCNruWmI?autoplay=1"
-                frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
 
         <p>SEE ALSO: <a href="https://gchristensen.github.io/ubiquitywe/">UbiquityWE</a></p>
         <h4><a id="user-content-description" class="anchor" aria-hidden="true" href="#description">
