@@ -19,8 +19,10 @@ dispatch.init = function(bootstrap_settings)
         entry_point = vars[0];
 
         for (let v of vars)
-            if (v.startsWith("url="))
-                resource = decodeURI(v.split("=")[1]);
+            if (v.startsWith("url=")) {
+                resource = decodeURIComponent(v.split("=")[1]);
+                resource = resource.replace("news://", "");
+            }
     }
 
     let opts = {

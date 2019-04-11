@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Dark Flow",
   "description": "A command interface for imageboards",
-  "version": "0.2.1.5",
+  "version": "0.2.2.1",
 
   "homepage_url": "https://gchristensen.github.io/dark-flow/",
 
@@ -43,6 +43,20 @@
       "js": ["glue/iframe-listener.js"],
       "all_frames": true
     }
+  ],
+
+  "protocol_handlers": [
+    {
+      "protocol": "news",
+      "name": "Dark Flow URL Listener",
+      "uriTemplate": "flow.html?front&url=chan://%s"
+    },
+    {
+      "protocol": "web+bb",
+      "name": "Dark Flow URL Listener",
+      "uriTemplate": "flow.html?front&url=bb://%s"
+    }
+
   ]
 
 }

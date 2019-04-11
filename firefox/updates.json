@@ -1,0 +1,11 @@
+{
+  "addons": {
+    "ubiquitywe@firefox": {
+      "updates": [{
+          "version": "0.2.2.1",
+          "update_link": "https://github.com/GChristensen/dark-flow/releases/download/v0.2.2.1/dark_flow.xpi"
+        }
+      ]
+    }
+  }
+}
