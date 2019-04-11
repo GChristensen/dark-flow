@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Dark Flow",
   "description": "A command interface for imageboards",
-  "version": "0.2.2.1",
+  "version": "0.2.2.2",
 
   "homepage_url": "https://gchristensen.github.io/dark-flow/",
 
@@ -49,12 +49,12 @@
     {
       "protocol": "news",
       "name": "Dark Flow URL Listener",
-      "uriTemplate": "flow.html?front&url=chan://%s"
+      "uriTemplate": "flow.html?front&url=%s"
     },
     {
       "protocol": "web+bb",
       "name": "Dark Flow URL Listener",
-      "uriTemplate": "flow.html?front&url=bb://%s"
+      "uriTemplate": "flow.html?front&url=%s"
     }
 
   ]
