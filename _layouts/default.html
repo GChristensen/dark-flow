@@ -65,22 +65,37 @@
             xhr.send();
 
             function watch() {
-                //document.getElementById('placeholder').style.display='none';
-                var videoman = document.getElementById('videoman');
-                videoman.style.display='block';
-                videoman.innerHTML = '<iframe width="500" height="280" src="https://www.youtube.com/embed/tNPRCNruWmI?autoplay=1"'
-                    + 'frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe><br/>'
+                document.getElementById('placeholder').style.display='none';
+                document.getElementById('webm').style.display='block';
+                var video = document.querySelector('#webm video');
+                video.play();
+                setTimeout(function () {
+                    document.getElementById('webm').style.display = 'none';
+                    document.getElementById('placeholder').style.display = 'block';
+                }, 20000);
             }
+
+            setTimeout(function() {
+                if (navigator.userAgent.search("Chrome") >= 0
+                    || navigator.userAgent.search("Firefox") >= 0) {
+
+                    watch();
+                }
+            }, 1000);
         </script>
 
-        <p id="placeholder">
-        <div style="position: relative; display: table;" onclick="watch()">
-            <!--img title="Watch on Youtube" style="cursor: pointer;" src="/enso-portable/screen.jpg" alt="screen" /-->
-            <img title="Watch on Youtube" style="cursor: pointer;" src="/dark-flow/screen.png" alt="screen" />
-            <div style="position: absolute; right: 10px; bottom: 10px; color: white; font-weight: bold; cursor: pointer;" onclick="watch()">
-                <img src="/youtube.png" style="vertical-align: middle; cursor: pointer;"> YouTube</div>
+        <div id="placeholder" style="display: block;">
+            <div style="position: relative; display: table;" onclick="watch()">
+                <!--img title="Watch on Youtube" style="cursor: pointer;" src="/enso-portable/screen.jpg" alt="screen" /-->
+                <img style="cursor: pointer;" src="/dark-flow/screen.png" alt="screen"/>
+                <div style="position: absolute; right: 10px; bottom: 10px; color: white; font-weight: bold; cursor: pointer;" onclick="watch()"
+                ><img src="/play_video.png" style="vertical-align: middle; cursor: pointer;"></div>
+            </div>
         </div>
-        </p>
+
+        <div id="webm" style="display: none;">
+            <video src="/dark-flow/media/dark-flow.webm" width="500px" height="280px" type="video/webm" muted />
+        </div>
 
         <p style="display: none" id="videoman"></p>
 
@@ -95,7 +110,7 @@
             <span style="font-family: 'Lucida Console', 'Courier New', monospace; color: black; font-weight: bold;">news://</span> protocol scheme, so
             you may type <span style="font-family: 'Lucida Console', 'Courier New', monospace; color: black; font-weight: bold;">news://4chan.org/c:imp:10p</span>
             in browser URL-bar.</p>
-            <p></p>Generally, it can read any Wakaba-flavour imageboard which is not too different from the original
+            <p style="text-align: justify;">Generally, it can read any Wakaba-flavour imageboard which is not too different from the original
             Wakaba. Parser-plugins for particularly any site could be written in Clojure script.
             See the <a href="https://raw.github.com/GChristensen/dark-flow/master/manual.png">manual</a>
             or <a href="https://www.youtube.com/watch?v=QWI2CNt-snQ" rel="nofollow">video</a> for more information.</p>
