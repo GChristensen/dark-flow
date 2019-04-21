@@ -742,12 +742,17 @@
               existing-replies (child-by-class oppost "replies")
               orig-collapse-bar (child-by-class oppost "collapse-bar")
               collapse-bar (child-by-class posts "collapse-bar")]
-           (.removeChild (.-parentNode orig-collapse-bar) orig-collapse-bar)
-           (.removeChild (.-parentNode collapse-bar) collapse-bar)
+          (when orig-collapse-bar
+           (.removeChild (.-parentNode orig-collapse-bar) orig-collapse-bar))
+          (when collapse-bar
+           (.removeChild (.-parentNode collapse-bar) collapse-bar))
           (when-let [indicator (.querySelector posts ".load-indicator > img")]
             (set! (.-src indicator) (themed-image (.getAttribute indicator "src"))))
           (.removeChild oppost existing-replies)
           (.appendChild oppost posts)
+          (js/setTimeout
+            #(.appendChild (child-by-class posts "image-indent") orig-collapse-bar)
+            3000)
           (set! (.-innerHTML service-pane) service-html)
              (expand-thread (.-id oppost) true))
         (set! (.-innerHTML service-pane) empty-set)))))

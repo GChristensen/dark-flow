@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Dark Flow",
   "description": "A command interface for imageboards",
-  "version": "0.2.2.2",
+  "version": "0.2.2.3",
 
   "homepage_url": "https://gchristensen.github.io/dark-flow/",
 
