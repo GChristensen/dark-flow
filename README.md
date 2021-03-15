@@ -13,9 +13,9 @@ GAE-application in an early version of Clojure (at the times when Clojure script
 versioned) and then ported to Clojure Script to embed it in Firefox 
 to enter chan:// style urls in address bar directly (this was necessary
 to distinguish them from regular http:// urls and apply special processing). 
-It was reworked again after Clojure Script introduced a set of breaking changes
-and when multiprocess Firefox has appeared.
+It was reworked again after Clojure Script introduced a set of breaking changes,
+and yet again when multiprocess Firefox has appeared.
 When Firefox quantum has broken it once more, it was ported back to GAE, and finally again 
-to Firefox Quantum. As the result, the current codebase consists exclusively of hacks and obscure
+as a Firefox Quantum extension. As the result, the current codebase consists exclusively of hacks and obscure
 control streams needed to overcome all the limitations encountered in the way.
  
