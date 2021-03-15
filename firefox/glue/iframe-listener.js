@@ -1,9 +1,12 @@
 
-if (window.parent != window && location.pathname.endsWith("/post")) // 4chan in iframe
-    setTimeout(() => chrome.runtime.sendMessage({message: "dark-flow:post-form-iframe-submitted"}), 3000);
+if (window.parent != window && location.pathname.endsWith("/post")) {// 4chan in iframe
+    chrome.runtime.sendMessage({message: "dark-flow:post-form-iframe-submitted"})
+}
 
 if (location.hash && location.hash.startsWith("#form")) {
+
     let form = document.body.querySelector("form[name='post']"); // 4chan in iframe
+
     if (form) {
         document.body.innerHTML = "";
 
@@ -13,7 +16,6 @@ if (location.hash && location.hash.startsWith("#form")) {
         let captcha_line = form.querySelector("#captchaFormPart");
 
         if (captcha_line) {
-
             let captcha_script = captcha_line.querySelector("script");
             captcha_script.setAttribute("async", "false");
 
@@ -32,6 +34,8 @@ if (location.hash && location.hash.startsWith("#form")) {
 
         form.addEventListener("submit", (e) => {
             e.preventDefault();
+
+            console.log("submitted")
             let newScript = document.createElement('script');
             newScript.innerHTML = `
                 if (grecaptcha.getResponse()) {

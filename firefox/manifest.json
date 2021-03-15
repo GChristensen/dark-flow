@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Dark Flow",
   "description": "A command interface for imageboards",
-  "version": "0.2.2.3",
+  "version": "0.2.2.4",
 
   "homepage_url": "https://gchristensen.github.io/dark-flow/",
 
@@ -39,7 +39,7 @@
 
   "content_scripts": [
     {
-      "matches": ["*://*.4chan.org/*"],
+      "matches": ["*://*.4chan.org/*", "*://*.4cdn.org/*", "*://*.4channel.org/*"],
       "js": ["glue/iframe-listener.js"],
       "all_frames": true
     }

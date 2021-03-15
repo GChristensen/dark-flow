@@ -5,7 +5,7 @@
 (ns kuroi.io
   (:require [goog.math :as math]))
 
-;; ideomatically abstracted communications with the addon ;;;;;;;;;;;;;;;;;;;;;;
+;; idiomatically abstracted communications with the addon ;;;;;;;;;;;;;;;;;;;;;;
 
 (def *port*)
 (def *addon*)
