@@ -27,32 +27,55 @@
       (str/replace #"<embed[^>]*>" "")
       (str/replace #"((?:<blockquote)|(?:<div)|(?:<p))" "$1 style=\"display: inline\" ")))
 
+(defn instantiate-arg [arg this event]
+      (cond (re-matches #"\"([^\"]*)\"" arg) (get (re-matches #"\"([^\"]*)\"" arg) 1)
+            (re-matches #"'([^']*)'" arg) (get (re-matches #"'([^']*)'" arg) 1)
+            (re-matches #"-?\d+" arg) (js/parseInt arg)
+            (= "this" arg) this
+            (= "event" arg) event
+            (= "true" arg) true
+            (= "false" arg) false
+            ))
 
+;; MV3 has banned eval, so more funny workarounds
+(defn invoke-handler [handler this event]
+    (let [matches (re-matches #"\s*([^.]+)\.([^.]+)\(([^)]*)\);?\s*" handler)
+          obj (aget js/kuroi (get matches 1))
+          func (aget obj (get matches 2))
+          args (str/split (get matches 3) #",\s*")
+          args (clj->js (map #(instantiate-arg % this event) args))]
+         (.apply func ojb args)))
+
+;; WebExtensions has banned inline evaluation, so we need to use eval
 (defn replace-events [n]
     (let [with-event (.querySelectorAll n "*[data-onclick]")]
          (.forEach with-event (fn [we]
                                    (set! (.-onclick we)
                                          (fn [event]
                                              (set! (.-_event we) event)
-                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onclick")"")))))))
+                                             (invoke-handler (.getAttribute we "data-onclick") (js* "this") event)
+                                             #_(js/eval (str "event=this._event;"(.getAttribute we "data-onclick")"")))))))
     (let [with-event (.querySelectorAll n "*[data-onload]")]
          (.forEach with-event (fn [we]
                                    (set! (.-onload we)
                                          (fn [event]
                                              (set! (.-_event we) event)
-                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onload")"")))))))
+                                             (invoke-handler (.getAttribute we "data-onload") (js* "this") event)
+                                             #_(js/eval (str "event=this._event;"(.getAttribute we "data-onload")"")))))))
     (let [with-event (.querySelectorAll n "*[data-onmouseover]")]
          (.forEach with-event (fn [we]
                                    (set! (.-onmouseover we)
                                          (fn [event]
                                              (set! (.-_event we) event)
-                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onmouseover")"")))))))
+                                             (invoke-handler (.getAttribute we "data-onmouseover") (js* "this") event)
+                                             #_(js/eval (str "event=this._event;"(.getAttribute we "data-onmouseover")"")))))))
     (let [with-event (.querySelectorAll n "*[data-onmouseout]")]
          (.forEach with-event (fn [we]
                                    (set! (.-onmouseout we)
                                          (fn [event]
                                              (set! (.-_event we) event)
-                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onmouseout")""))))))))
+                                             (invoke-handler (.getAttribute we "data-onmouseout") (js* "this") event)
+                                             #_(js/eval (str "event=this._event;"(.getAttribute we "data-onmouseout")""))))))))
 
 (em/deftemplate watch :compiled "templates/watch-stream.html" 
   [threads target]
@@ -263,15 +286,16 @@
                 [:.thread-header]
                 (ef/do->
                  (ef/remove-attr :style)
+                 ;; will not work without eval!
                  ;(ef/set-attr :data-onmouseover (str "if (event.target == this) frontend.expand_thread(\""
                  ;                                (:internal-id th)
                  ;                                "\", true," (not (:peek target)) ")"))
                  ;(ef/set-attr :data-onmouseout (str "if (event.target == this) setTimeout(() => frontend.expand_thread(\""
                  ;                                (:internal-id th)
                  ;                                "\", false," (not (:peek target)) "), 500)"))
-                 (ef/set-attr :data-onclick (str "if (event.target == this) frontend.expand_thread(\""
+                 (ef/set-attr :data-onclick (str "frontend.expand_thread_evt(\""
                                             (:internal-id th)
-                                            "\")")))
+                                            "\", event, this)")))
                 [:.watch-trigger-disabled]
                 (fn [node]
                   (if (:onwatch th)

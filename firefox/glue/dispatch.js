@@ -65,7 +65,7 @@ dispatch.init = function(bootstrap_settings)
 
             kuroi.settings.load_settings(function(settings)
             {
-                let module_main = eval("kuroi.frontend." + opts.entry_point);
+                let module_main = kuroi.frontend[entry_point];
                 module_main(settings, opts.resource);
             });
         });

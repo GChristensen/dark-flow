@@ -1,6 +1,10 @@
 .PHONY: test
 test:
-	cd firefox; start web-ext run -p "%APPDATA%/Mozilla/Firefox/Profiles/debug" --keep-profile-changes --browser-console
+	cd firefox; start web-ext run -p "$(HOME)/../home/firefox/debug" --keep-profile-changes
+
+.PHONY: test-nightly
+test-nightly:
+	cd firefox; start web-ext run -p "$(HOME)/../home/firefox/debug.nightly" --firefox=nightly --keep-profile-changes
 
 .PHONY: sign
 sign:

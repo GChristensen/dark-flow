@@ -1,4 +1,6 @@
 
+console.log(location)
+
 if (window.parent != window && location.pathname.endsWith("/post")) {// 4chan in iframe
     chrome.runtime.sendMessage({message: "dark-flow:post-form-iframe-submitted"})
 }
@@ -10,7 +12,7 @@ if (location.hash && location.hash.startsWith("#form")) {
     if (form) {
         document.body.innerHTML = "";
 
-        let postForm = form.querySelector("#postForm");
+        let postForm = form.querySelector(".postForm");
         if (postForm)
             postForm.setAttribute("style", "display: block !important");
         let captcha_line = form.querySelector("#captchaFormPart");

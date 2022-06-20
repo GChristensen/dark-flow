@@ -1,10 +1,13 @@
-function openBoard() {
-   chrome.tabs.create({
+async function openBoard() {
+
+    await browser.permissions.request({origins: ["<all_urls>"]});
+
+    chrome.tabs.create({
      "url": "flow.html"
    });
 }
 
-chrome.browserAction.onClicked.addListener(openBoard);
+(chrome.browserAction || chrome.action).onClicked.addListener(openBoard);
 
 chrome.runtime.onMessageExternal.addListener(msg => {
    switch (msg.message) {

@@ -72,7 +72,7 @@
                                        (ef/remove-node)))))))
          ~lst))))
 
-;; if not fallbac, acts on live node, mimics clone-for otherwise
+;; if not fallback, acts on live node, mimics clone-for otherwise
 (defmacro clone-for-live-node [live-node window _ [sym lst] & forms]
   `(fn [pnod#]
      (let [div# ~live-node

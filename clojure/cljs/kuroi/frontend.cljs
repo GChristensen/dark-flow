@@ -636,6 +636,10 @@
       ;; if the dom isn't constructed yet
       (js/setTimeout #(lazy-get-watch element watch-stream?) 2000))))
 
+(defn ^:export expand-thread-evt [post-id event this]
+      (when (= (.-target event) this)
+            (expand-thread post-id (js* "undefined") (js* "undefined"))))
+
 (defn ^:export expand-thread [post-id expand? halt &{:keys [mass]}]
  (when (not halt)
   (let [
@@ -1038,13 +1042,14 @@
               (let [iframe (.querySelector form-clone "iframe")]
                    (show-elt load-indicator "inline")
                    (if new-thread?
-                     (.setAttribute (.querySelector form-clone "iframe") "src" (str (pp/get-scheme target) (:forum target) "#form"))
-                     (let [url (str (pp/html-thread-url thread-id target) "#form")]
+                     (.setAttribute (.querySelector form-clone "iframe") "src" (str (pp/get-scheme target) (:forum target) #_"#form"))
+                     (let [url (str (pp/html-thread-url thread-id target) #_"#form")]
                           (.setAttribute iframe "src" url)))
-                   (.once io/*port* "dark-flow:post-form-iframe-loaded" #(do
+                   (hide-elt load-indicator)
+                   #_(.once io/*port* "dark-flow:post-form-iframe-loaded" #(do
                                                                            (hide-elt load-indicator)
                                                                            (set! (.-display (.-style iframe)) "block")))
-                   (.once io/*port* "dark-flow:post-form-iframe-submitted" #(handle-post-response {}))))
+                   #_(.once io/*port* "dark-flow:post-form-iframe-submitted" #(handle-post-response {}))))
 
 
             (when new-thread?

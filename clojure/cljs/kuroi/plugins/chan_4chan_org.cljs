@@ -107,5 +107,5 @@
   (set! (.-__is_iframe__ form) true)
   (set! (.-__set_width__ form) "545px")
   (set! (.-__set_height__ form) "537px")
-  (set! (.-innerHTML form) (str "<iframe style=\"height:510px; display: none;\"/>"))
+  (set! (.-innerHTML form) (str "<iframe style=\"height:510px; display: block;\"/>"))
   form)
