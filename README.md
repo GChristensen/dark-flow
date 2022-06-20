@@ -21,7 +21,7 @@ extension. WebExtension manifest v3 added a yet another layer of indirection.
 As the result, the current codebase consists exclusively of hacks and
 obscure control streams needed to overcome all the limitations encountered in
 the way. Because application uses aged libraries and dynamic techniques inside
-dynamic techniques to generate content, because it was written before the era
+dynamic techniques to generate content, since it was written before the era
 of JS SPA frameworks, it needs to be scrapped and rewritten from scratch.
 In short, brace yourself if you want to look at the sources.
  
