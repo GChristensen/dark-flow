@@ -1,13 +1,13 @@
+const MANIFEST_V3 = chrome.runtime.getManifest().manifest_version === 3;
+
 async function openBoard() {
+    if (MANIFEST_V3)
+        await browser.permissions.request({origins: ["<all_urls>"]});
 
-    await browser.permissions.request({origins: ["<all_urls>"]});
-
-    chrome.tabs.create({
-     "url": "flow.html"
-   });
+    chrome.tabs.create({url: "flow.html"});
 }
 
-(chrome.browserAction || chrome.action).onClicked.addListener(openBoard);
+(MANIFEST_V3? chrome.action: chrome.browserAction).onClicked.addListener(openBoard);
 
 chrome.runtime.onMessageExternal.addListener(msg => {
    switch (msg.message) {

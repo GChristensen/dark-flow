@@ -8,7 +8,7 @@ test-nightly:
 
 .PHONY: sign
 sign:
-	cd firefox; web-ext sign -i web-ext-artifacts updates.json `cat $(HOME)/.amo/creds`
+	cd firefox; web-ext sign -i web-ext-artifacts updates.json `cat "$(HOME)/../home/gnu/.amo/creds"`
 
 .PHONY: clojure
 clojure:

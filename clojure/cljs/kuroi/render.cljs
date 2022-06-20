@@ -53,29 +53,29 @@
                                    (set! (.-onclick we)
                                          (fn [event]
                                              (set! (.-_event we) event)
-                                             (invoke-handler (.getAttribute we "data-onclick") (js* "this") event)
-                                             #_(js/eval (str "event=this._event;"(.getAttribute we "data-onclick")"")))))))
+                                             #_(invoke-handler (.getAttribute we "data-onclick") (js* "this") event)
+                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onclick")"")))))))
     (let [with-event (.querySelectorAll n "*[data-onload]")]
          (.forEach with-event (fn [we]
                                    (set! (.-onload we)
                                          (fn [event]
                                              (set! (.-_event we) event)
-                                             (invoke-handler (.getAttribute we "data-onload") (js* "this") event)
-                                             #_(js/eval (str "event=this._event;"(.getAttribute we "data-onload")"")))))))
+                                             #_(invoke-handler (.getAttribute we "data-onload") (js* "this") event)
+                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onload")"")))))))
     (let [with-event (.querySelectorAll n "*[data-onmouseover]")]
          (.forEach with-event (fn [we]
                                    (set! (.-onmouseover we)
                                          (fn [event]
                                              (set! (.-_event we) event)
-                                             (invoke-handler (.getAttribute we "data-onmouseover") (js* "this") event)
-                                             #_(js/eval (str "event=this._event;"(.getAttribute we "data-onmouseover")"")))))))
+                                             #_(invoke-handler (.getAttribute we "data-onmouseover") (js* "this") event)
+                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onmouseover")"")))))))
     (let [with-event (.querySelectorAll n "*[data-onmouseout]")]
          (.forEach with-event (fn [we]
                                    (set! (.-onmouseout we)
                                          (fn [event]
                                              (set! (.-_event we) event)
-                                             (invoke-handler (.getAttribute we "data-onmouseout") (js* "this") event)
-                                             #_(js/eval (str "event=this._event;"(.getAttribute we "data-onmouseout")""))))))))
+                                             #_(invoke-handler (.getAttribute we "data-onmouseout") (js* "this") event)
+                                             (js/eval (str "event=this._event;"(.getAttribute we "data-onmouseout")""))))))))
 
 (em/deftemplate watch :compiled "templates/watch-stream.html" 
   [threads target]
