@@ -38,6 +38,7 @@
             ))
 
 ;; MV3 has banned eval, so more funny workarounds
+;; !! try also direct (js* injection
 (defn invoke-handler [handler this event]
     (let [matches (re-matches #"\s*([^.]+)\.([^.]+)\(([^)]*)\);?\s*" handler)
           obj (aget js/kuroi (get matches 1))
